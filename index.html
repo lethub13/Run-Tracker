@@ -159,12 +159,25 @@ async function fetchActivities(){
         time:parseFloat(r.time)||0
     }));
 
-    // Populate filter dropdown
-    const namesSet = new Set(activities.map(r => r.name));
-    filterSelect.innerHTML = '<option value="">--All Names--</option>';
-    namesSet.forEach(name => {
-        filterSelect.innerHTML += `<option value="${name}">${name}</option>`;
-    });
+   // Remember current filter selection
+const currentFilter = filterSelect.value.trim().toLowerCase();
+
+// Populate filter dropdown
+const namesSet = new Set(activities.map(r => r.name));
+filterSelect.innerHTML = '<option value="">--All Names--</option>';
+namesSet.forEach(name => {
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    // Re-select the previous selection
+    if(name.toLowerCase() === currentFilter) option.selected = true;
+    filterSelect.appendChild(option);
+});
+
+// Apply filter
+const filterName = filterSelect.value.trim().toLowerCase();
+const filtered = filterName ? activities.filter(r => r.name.toLowerCase() === filterName) : activities;
+
 
     const filterName = filterSelect.value.trim().toLowerCase();
     const filtered = filterName ? activities.filter(r=>r.name.toLowerCase()===filterName) : activities;
@@ -224,3 +237,4 @@ fetchActivities();
 </script>
 </body>
 </html>
+
