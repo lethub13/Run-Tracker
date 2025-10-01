@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>Run Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body { font-family: Arial, sans-serif; margin:10px; background:#f4f4f4;}
-form, .badges, .activity-table, .leaderboard { background:#fff; padding:15px; margin:10px auto; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.2);}
+form, .badges, .activity-table, .leaderboard, .ads { background:#fff; padding:15px; margin:10px auto; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.2);}
 label { display:block; margin-top:10px;}
 input, select { width:100%; padding:8px; margin-top:5px; box-sizing:border-box; }
 button { margin-top:15px; padding:10px; width:100%; background:#007BFF; color:#fff; border:none; border-radius:5px; cursor:pointer; font-size:16px;}
@@ -31,9 +32,9 @@ tbody tr:hover {background:#d1e7ff;}
 <h2 style="text-align:center;">Run Tracker</h2>
 
 <form id="activityForm">
-<label>Select Name to Filter:</label>
+<label>Select Name to Filter (optional):</label>
 <select id="filterName">
-  <option value="">--Select Name--</option>
+  <option value="">--All Names--</option>
 </select>
 
 <label>Date:</label>
@@ -75,6 +76,12 @@ tbody tr:hover {background:#d1e7ff;}
 </table>
 </div>
 
+<!-- Placeholder for Ads or Donations -->
+<div class="ads">
+<h3>Support this App</h3>
+<p>Add your donation button or ad script here (e.g., PayPal, Ko-fi, or AdSense)</p>
+</div>
+
 <script>
 const form = document.getElementById('activityForm');
 const tableBody = document.querySelector('#activitiesTable tbody');
@@ -105,10 +112,11 @@ form.addEventListener('submit', async function(e){
     e.preventDefault();
     const activity = {
         date: document.getElementById('date').value,
-        name: document.getElementById('name').value, // always use input field
+        name: document.getElementById('name').value.trim(),
         distance: parseFloat(document.getElementById('distance').value),
         time: timeToMinutes(document.getElementById('time').value)
     };
+    if(!activity.name) { alert('Please enter a name'); return; }
     try{
         const response = await fetch(WEB_APP_URL,{method:'POST', body:JSON.stringify(activity)});
         const result = await response.json();
@@ -140,13 +148,13 @@ async function fetchActivities(){
 
     // Populate filter dropdown
     const namesSet = new Set(activities.map(r => r.name));
-    filterSelect.innerHTML = '<option value="">--Select Name--</option>';
+    filterSelect.innerHTML = '<option value="">--All Names--</option>';
     namesSet.forEach(name => {
         filterSelect.innerHTML += `<option value="${name}">${name}</option>`;
     });
 
-    const filterName = filterSelect.value;
-    const filtered = filterName ? activities.filter(r=>r.name===filterName) : [];
+    const filterName = filterSelect.value.trim().toLowerCase();
+    const filtered = filterName ? activities.filter(r=>r.name.toLowerCase()===filterName) : activities;
 
     let totalDistance=0, totalTime=0, maxDistance=0, minPace=Infinity, totalPoints=0;
     tableBody.innerHTML='';
