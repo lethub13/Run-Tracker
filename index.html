@@ -115,7 +115,7 @@
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbyNgXZMw5_uJdVX2MJYIgvnJwtzu7gEgR7ZYcnVew5hArcCT9Eu3XMUVfoO1yG5GrCzwg/exec";
+const scriptUrl = "https://script.google.com/macros/s/AKfycbzGfuk6GWDKbZIP2Gq5xcRoFb4H6QDWWT2dXivVIOryPszIZIwEPnKcdluz0X81XTZRtA/exec";
 const runForm = document.getElementById("runForm");
 const activitiesTable = document.getElementById("activitiesTable");
 const leaderboardTable = document.getElementById("leaderboardTable");
@@ -203,7 +203,11 @@ runForm.addEventListener("submit", async e=>{
     distance:document.getElementById("distance").value,
     time:document.getElementById("time").value
   };
-  await fetch(scriptUrl,{method:"POST",body:JSON.stringify(data)});
+  await fetch(scriptUrl,{
+    method:"POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
   runForm.reset();
   fetchActivities();
 });
