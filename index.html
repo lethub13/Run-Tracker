@@ -1,223 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Run Tracker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f5f5f5;
-    }
-    h1 {
-      text-align: center;
-    }
-    form, .activities, .leaderboard, .ads {
-      background: #fff;
-      padding: 15px;
-      margin: 15px auto;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      max-width: 600px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-    input, select, button {
-      padding: 8px;
-      width: 100%;
-      margin-top: 5px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    table, th, td {
-      border: 1px solid #ccc;
-    }
-    th, td {
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background: #eee;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Run Tracker</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background:#f5f5f5;
+    margin:20px;
+  }
+  h1 { text-align:center; }
+  form, .activities, .leaderboard, .ads, .filter {
+    background:#fff;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:20px;
+    max-width:600px;
+    margin:auto;
+    box-shadow:0 2px 5px rgba(0,0,0,0.2);
+  }
+  label {
+    display:block;
+    margin:10px 0;
+  }
+  input, select, button {
+    margin-left:5px;
+    padding:5px;
+  }
+  table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+  }
+  th, td {
+    border:1px solid #ccc;
+    padding:6px;
+    text-align:center;
+  }
+  th { background:#eee; }
+  .table-wrap { overflow-x:auto; }
+  button {
+    padding:8px 12px;
+    border:none;
+    border-radius:5px;
+    background:#007BFF;
+    color:#fff;
+    cursor:pointer;
+  }
+  button:hover { background:#0056b3; }
+</style>
 </head>
 <body>
-  <h1>Run Tracker</h1>
 
-  <!-- Add New Run -->
-  <form id="runForm">
-    <label>Date: <input type="date" id="date" required></label>
-    <label>Name: <input type="text" id="name" required></label>
-    <label>Distance (km): <input type="number" id="distance" step="0.01" required></label>
-    <label>Time (hh:mm:ss): <input type="time" id="time" step="1" required></label>
-    <button type="submit">Add Run</button>
+<h1>Run Tracker</h1>
+
+<form id="runForm">
+  <label>Date:
+    <input type="date" id="date" required>
+  </label>
+  <label>Name:
+    <input type="text" id="name" required>
+  </label>
+  <label>Distance (km):
+    <input type="number" id="distance" step="0.01" required>
+  </label>
+  <label>Time (hh:mm:ss):
+    <input type="text" id="time" placeholder="hh:mm:ss" required>
+  </label>
+  <button type="submit">Add Run</button>
+</form>
+
+<div class="filter">
+  <label for="filterSelect">Filter by Name:</label>
+  <select id="filterSelect">
+    <option value="">--All Names--</option>
+  </select>
+</div>
+
+<div class="activities">
+  <h2>Past Activities</h2>
+  <div class="table-wrap">
+    <table aria-live="polite">
+      <thead>
+        <tr><th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th></tr>
+      </thead>
+      <tbody id="activitiesTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="leaderboard">
+  <h2>Leaderboard</h2>
+  <div class="table-wrap">
+    <table aria-live="polite">
+      <thead>
+        <tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th></tr>
+      </thead>
+      <tbody id="leaderboardTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="ads" style="text-align:center;">
+  <h3>Support this App</h3>
+  <form action="https://www.paypal.com/donate" method="post" target="_top">
+    <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
+    <input type="image" 
+           src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"
+           border="0" name="submit" 
+           alt="Donate with PayPal button"
+           style="max-width:100%; height:auto;" />
   </form>
+</div>
 
-  <!-- Filter -->
-  <div class="filter" style="max-width:600px; margin:0 auto;">
-    <label for="filterSelect">Filter by Name:</label>
-    <select id="filterSelect">
-      <option value="">--All Names--</option>
-    </select>
-  </div>
+<script>
+const scriptUrl = "https://script.google.com/macros/s/AKfycbwjk_zvgTdrzKiMaGxMO7VMVjOx0X2qujBkS7dQ7yAl6yZtgJx0H6k_NCVEKu_B7lsZzg/exec";
+const runForm = document.getElementById("runForm");
+const activitiesTable = document.getElementById("activitiesTable");
+const leaderboardTable = document.getElementById("leaderboardTable");
+const filterSelect = document.getElementById("filterSelect");
 
-  <!-- Past Activities -->
-  <div class="activities">
-    <h2>Past Activities</h2>
-    <table id="activitiesTable">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Name</th>
-          <th>Distance (km)</th>
-          <th>Time</th>
-          <th>Pace (min/km)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+// --- Utility functions ---
+function timeToSeconds(t){
+  const p = t.split(":").map(Number);
+  if (p.some(isNaN)) return 0;
+  return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
+}
+function secondsToHMS(sec){
+  const h=Math.floor(sec/3600);
+  const m=Math.floor((sec%3600)/60);
+  const s=sec%60;
+  return [h,m,s].map(x=>x.toString().padStart(2,"0")).join(":");
+}
+function calcPace(dist, timeStr){
+  const s = timeToSeconds(timeStr);
+  if(!dist || s===0) return "-";
+  const pace = s/60/dist;
+  const min = Math.floor(pace);
+  const sec = Math.round((pace-min)*60);
+  return `${min}:${String(sec).padStart(2,'0')}`;
+}
 
-  <!-- Leaderboard -->
-  <div class="leaderboard">
-    <h2>Leaderboard</h2>
-    <table id="leaderboardTable">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Total Distance (km)</th>
-          <th>Total Time</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+// --- Fetch activities from backend ---
+async function fetchActivities(){
+  const res = await fetch(scriptUrl);
+  const activities = await res.json();
 
-  <!-- Donation Section -->
-  <div class="ads" style="text-align:center;">
-    <h3>Support this App</h3>
-    <p>If you enjoy using this app, consider supporting me!</p>
-    <form action="https://www.paypal.com/donate" method="post" target="_top">
-      <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
-      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" 
-             border="0" name="submit" 
-             title="PayPal - The safer, easier way to pay online!" 
-             alt="Donate with PayPal button" 
-             style="max-width:100%; height:auto;" />
-      <img alt="" border="0" src="https://www.paypal.com/en_ZA/i/scr/pixel.gif" width="1" height="1" />
-    </form>
-  </div>
+  // Preserve filter selection
+  const prevValue = filterSelect.value;
+  filterSelect.innerHTML = '<option value="">--All Names--</option>';
+  [...new Set(activities.map(r=>r.name))].forEach(name=>{
+    const opt = document.createElement("option");
+    opt.value=name; opt.textContent=name;
+    if(name === prevValue) opt.selected=true;
+    filterSelect.appendChild(opt);
+  });
 
-  <script>
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbwjk_zvgTdrzKiMaGxMO7VMVjOx0X2qujBkS7dQ7yAl6yZtgJx0H6k_NCVEKu_B7lsZzg/exec";
-    const runForm = document.getElementById("runForm");
-    const activitiesTable = document.querySelector("#activitiesTable tbody");
-    const leaderboardTable = document.querySelector("#leaderboardTable tbody");
-    const filterSelect = document.getElementById("filterSelect");
+  const filterName = filterSelect.value.trim().toLowerCase();
+  const filtered = filterName ? activities.filter(r=>r.name.toLowerCase()===filterName) : activities;
 
-    // Convert hh:mm:ss into seconds
-    function timeToSeconds(t) {
-      const parts = t.split(":").map(Number);
-      return parts[0]*3600 + parts[1]*60 + (parts[2] || 0);
-    }
+  // Past Activities
+  activitiesTable.innerHTML="";
+  filtered.forEach(r=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${r.date}</td><td>${r.name}</td><td>${r.distance}</td><td>${r.time}</td><td>${calcPace(r.distance,r.time)}</td>`;
+    activitiesTable.appendChild(row);
+  });
 
-    // Convert seconds back to hh:mm:ss
-    function secondsToHMS(sec) {
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      return [h,m,s].map(x=>String(x).padStart(2,'0')).join(":");
-    }
+  // Leaderboard
+  const summary={};
+  activities.forEach(r=>{
+    const secs=timeToSeconds(r.time);
+    if(!summary[r.name]) summary[r.name]={dist:0,time:0};
+    summary[r.name].dist+=parseFloat(r.distance);
+    summary[r.name].time+=secs;
+  });
+  const sorted=Object.entries(summary).sort((a,b)=>b[1].dist-a[1].dist);
+  leaderboardTable.innerHTML="";
+  sorted.forEach(([name,vals])=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${name}</td><td>${vals.dist.toFixed(2)}</td><td>${secondsToHMS(vals.time)}</td>`;
+    leaderboardTable.appendChild(row);
+  });
+}
 
-    // Calculate pace
-    function calcPace(distance, timeStr) {
-      const secs = timeToSeconds(timeStr);
-      if (!distance || secs === 0) return "-";
-      const pace = secs / 60 / distance; // min per km
-      const min = Math.floor(pace);
-      const sec = Math.round((pace - min) * 60);
-      return `${min}:${String(sec).padStart(2,'0')}`;
-    }
+// --- Form submission ---
+runForm.addEventListener("submit", async e=>{
+  e.preventDefault();
+  const data={
+    date:document.getElementById("date").value,
+    name:document.getElementById("name").value.trim(),
+    distance:document.getElementById("distance").value,
+    time:document.getElementById("time").value
+  };
+  await fetch(scriptUrl,{method:"POST",body:JSON.stringify(data)});
+  runForm.reset();
+  fetchActivities();
+});
 
-    // Fetch activities
-    async function fetchActivities() {
-      const res = await fetch(scriptUrl);
-      const activities = await res.json();
-
-      // Build name dropdown (preserve selection)
-      const currentFilter = filterSelect.value.trim().toLowerCase();
-      filterSelect.innerHTML = '<option value="">--All Names--</option>';
-      [...new Set(activities.map(r => r.name))].forEach(name => {
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        if (name.toLowerCase() === currentFilter) option.selected = true;
-        filterSelect.appendChild(option);
-      });
-
-      const filterName = filterSelect.value.trim().toLowerCase();
-      const filtered = filterName ? activities.filter(r => r.name.toLowerCase() === filterName) : activities;
-
-      // Fill table
-      activitiesTable.innerHTML = "";
-      filtered.forEach(r => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${r.date}</td>
-          <td>${r.name}</td>
-          <td>${r.distance}</td>
-          <td>${r.time}</td>
-          <td>${calcPace(r.distance, r.time)}</td>`;
-        activitiesTable.appendChild(row);
-      });
-
-      // Leaderboard
-      const leaderboard = {};
-      activities.forEach(r => {
-        const secs = timeToSeconds(r.time);
-        if (!leaderboard[r.name]) leaderboard[r.name] = {dist:0, time:0};
-        leaderboard[r.name].dist += parseFloat(r.distance);
-        leaderboard[r.name].time += secs;
-      });
-      const sorted = Object.entries(leaderboard).sort((a,b)=>b[1].dist - a[1].dist);
-
-      leaderboardTable.innerHTML = "";
-      sorted.forEach(([name, vals]) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${name}</td>
-          <td>${vals.dist.toFixed(2)}</td>
-          <td>${secondsToHMS(vals.time)}</td>`;
-        leaderboardTable.appendChild(row);
-      });
-    }
-
-    // Add run
-    runForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const data = {
-        date: document.getElementById("date").value,
-        name: document.getElementById("name").value,
-        distance: document.getElementById("distance").value,
-        time: document.getElementById("time").value
-      };
-      await fetch(scriptUrl, {
-        method: "POST",
-        body: JSON.stringify(data)
-      });
-      runForm.reset();
-      fetchActivities();
-    });
-
-    filterSelect.addEventListener("change", fetchActivities);
-
-    fetchActivities();
-  </script>
+filterSelect.addEventListener("change", fetchActivities);
+fetchActivities();
+</script>
 </body>
 </html>
