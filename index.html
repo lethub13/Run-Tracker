@@ -95,7 +95,7 @@
   <div class="table-wrap">
     <table aria-live="polite">
       <thead>
-        <tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th></tr>
+        <tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badge</th></tr>
       </thead>
       <tbody id="leaderboardTable"></tbody>
     </table>
@@ -115,7 +115,7 @@
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbwjk_zvgTdrzKiMaGxMO7VMVjOx0X2qujBkS7dQ7yAl6yZtgJx0H6k_NCVEKu_B7lsZzg/exec";
+const scriptUrl = "https://script.google.com/macros/s/AKfycbyNgXZMw5_uJdVX2MJYIgvnJwtzu7gEgR7ZYcnVew5hArcCT9Eu3XMUVfoO1yG5GrCzwg/exec";
 const runForm = document.getElementById("runForm");
 const activitiesTable = document.getElementById("activitiesTable");
 const leaderboardTable = document.getElementById("leaderboardTable");
@@ -140,6 +140,12 @@ function calcPace(dist, timeStr){
   const min = Math.floor(pace);
   const sec = Math.round((pace-min)*60);
   return `${min}:${String(sec).padStart(2,'0')}`;
+}
+function getBadge(km) {
+  if (km >= 42.2) return "🏅 Marathon";
+  if (km >= 21.1) return "🥈 Half";
+  if (km >= 10) return "🥉 10K";
+  return "";
 }
 
 // --- Fetch activities from backend ---
@@ -180,7 +186,10 @@ async function fetchActivities(){
   leaderboardTable.innerHTML="";
   sorted.forEach(([name,vals])=>{
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${name}</td><td>${vals.dist.toFixed(2)}</td><td>${secondsToHMS(vals.time)}</td>`;
+    row.innerHTML=`<td>${name}</td>
+                   <td>${vals.dist.toFixed(2)}</td>
+                   <td>${secondsToHMS(vals.time)}</td>
+                   <td>${getBadge(vals.dist)}</td>`;
     leaderboardTable.appendChild(row);
   });
 }
