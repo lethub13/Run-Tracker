@@ -151,7 +151,7 @@ function getBadge(km) {
 }
 function formatDate(dateStr) {
   if (!dateStr) return "";
-  return dateStr.split("T")[0]; // from 2025-09-26T22:00:00.000Z → 2025-09-26
+  return dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
 }
 
 // --- Fetch activities from backend ---
@@ -159,33 +159,37 @@ async function fetchActivities(){
   const res = await fetch(scriptUrl);
   const activities = await res.json();
 
-  // Preserve filter selection
+  // Build filter dropdown
   const prevValue = filterSelect.value;
   filterSelect.innerHTML = '<option value="">--All Names--</option>';
   [...new Set(activities.map(r=>r.name))].forEach(name=>{
     const opt = document.createElement("option");
-    opt.value=name; opt.textContent=name;
+    opt.value=name; 
+    opt.textContent=name;
     if(name === prevValue) opt.selected=true;
     filterSelect.appendChild(opt);
   });
 
   const filterName = filterSelect.value.trim().toLowerCase();
-  const filtered = filterName ? activities.filter(r=>r.name.toLowerCase()===filterName) : activities;
+  const filtered = filterName 
+    ? activities.filter(r=>r.name.toLowerCase() === filterName) 
+    : activities;
 
-  // Past Activities
+  // ✅ Past Activities Table
   activitiesTable.innerHTML="";
   filtered.forEach(r=>{
     const row=document.createElement("tr");
+    const cleanDate = formatDate(r.date);
     row.innerHTML=`
-      <td>${formatDate(r.date)}</td>
+      <td>${cleanDate}</td>
       <td>${r.name}</td>
       <td>${r.distance}</td>
       <td>${r.time}</td>
-      <td>${calcPace(r.distance,r.time)}</td>`;
+      <td>${calcPace(r.distance, r.time)}</td>`;
     activitiesTable.appendChild(row);
   });
 
-  // Leaderboard
+  // ✅ Leaderboard
   const summary={};
   activities.forEach(r=>{
     const secs=timeToSeconds(r.time);
@@ -193,6 +197,7 @@ async function fetchActivities(){
     summary[r.name].dist+=parseFloat(r.distance);
     summary[r.name].time+=secs;
   });
+
   const sorted=Object.entries(summary).sort((a,b)=>b[1].dist-a[1].dist);
   leaderboardTable.innerHTML="";
   sorted.forEach(([name,vals])=>{
