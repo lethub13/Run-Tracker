@@ -115,7 +115,9 @@
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbywUzvKGJQ8ITV5j4ColKxNuuN2EEg_QwjE1-bFbeHfMrKRgnST-37HBx9PwPAtu2W0_Q/exec";
+// ✅ Use Netlify Proxy instead of direct Apps Script
+const scriptUrl = "/.netlify/functions/proxy";
+
 const runForm = document.getElementById("runForm");
 const activitiesTable = document.getElementById("activitiesTable");
 const leaderboardTable = document.getElementById("leaderboardTable");
