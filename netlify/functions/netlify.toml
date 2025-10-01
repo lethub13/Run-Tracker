@@ -1,0 +1,9 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+# Optional: single-page-app style routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
