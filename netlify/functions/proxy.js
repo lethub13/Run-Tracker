@@ -1,6 +1,6 @@
 // netlify/functions/proxy.js
 export async function handler(event) {
-  // 1) Preflight (CORS)
+  // Handle preflight
   if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
@@ -13,7 +13,6 @@ export async function handler(event) {
     };
   }
 
-  // 2) Forward to your Apps Script Web App
   const targetUrl = "https://script.google.com/macros/s/AKfycbywUzvKGJQ8ITV5j4ColKxNuuN2EEg_QwjE1-bFbeHfMrKRgnST-37HBx9PwPAtu2W0_Q/exec";
 
   const init = {
@@ -30,7 +29,7 @@ export async function handler(event) {
   return {
     statusCode: resp.status,
     headers: {
-      "Access-Control-Allow-Origin": "*",           // ✅ fixes CORS
+      "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Content-Type": "application/json",
@@ -38,3 +37,4 @@ export async function handler(event) {
     body: text,
   };
 }
+
