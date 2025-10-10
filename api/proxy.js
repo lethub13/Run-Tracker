@@ -1,11 +1,7 @@
-// api/proxy.js
 export default async function handler(req, res) {
   const target = process.env.APPS_SCRIPT_URL;
-  if (!target) {
-    return res.status(500).json({ ok: false, error: "Missing APPS_SCRIPT_URL env var" });
-  }
+  if (!target) return res.status(500).json({ ok:false, error:"Missing APPS_SCRIPT_URL" });
 
-  // CORS + NO CACHE
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -18,33 +14,20 @@ export default async function handler(req, res) {
     let body;
 
     if (method === "POST") {
-      if (req.body && Object.keys(req.body).length) {
-        body = JSON.stringify(req.body);
-      } else {
-        body = await new Promise((resolve) => {
-          let data = "";
-          req.on("data", (c) => (data += c));
-          req.on("end", () => resolve(data || "{}"));
+      if (req.body && Object.keys(req.body).length) body = JSON.stringify(req.body);
+      else {
+        body = await new Promise(r => {
+          let d=""; req.on("data", c => d+=c); req.on("end", ()=>r(d||"{}"));
         });
       }
       headers["Content-Type"] = "application/json";
     }
 
-    const upstream = await fetch(target, { method, headers, body, cache: "no-store" });
-    const text = await upstream.text();
-
-    try {
-      const json = JSON.parse(text);
-      return res.status(upstream.ok ? 200 : 502).json(json);
-    } catch {
-      return res.status(upstream.ok ? 200 : 502).json({
-        ok: upstream.ok,
-        status: upstream.status,
-        note: "Apps Script did not return JSON",
-        body: text
-      });
-    }
-  } catch (err) {
-    return res.status(500).json({ ok:false, error: "Proxy failed", details: String(err) });
+    const up = await fetch(target, { method, headers, body, cache:"no-store" });
+    const text = await up.text();
+    try { return res.status(up.ok?200:502).json(JSON.parse(text)); }
+    catch { return res.status(up.ok?200:502).json({ ok:up.ok, status:up.status, body:text }); }
+  } catch (e) {
+    return res.status(500).json({ ok:false, error:"Proxy failed", details:String(e) });
   }
 }
