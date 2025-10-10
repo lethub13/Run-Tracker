@@ -1,148 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Run Tracker</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background:#f5f5f5;
-    margin:20px;
-  }
-  h1 { text-align:center; }
-  form, .activities, .leaderboard, .ads, .filter {
-    background:#fff;
-    padding:15px;
-    border-radius:8px;
-    margin-bottom:20px;
-    max-width:600px;
-    margin:auto;
-    box-shadow:0 2px 5px rgba(0,0,0,0.2);
-  }
-  label {
-    display:block;
-    margin:10px 0;
-  }
-  input, select, button {
-    margin-left:5px;
-    padding:5px;
-  }
-  table {
-    width:100%;
-    border-collapse:collapse;
-    margin-top:10px;
-  }
-  th, td {
-    border:1px solid #ccc;
-    padding:6px;
-    text-align:center;
-  }
-  th { background:#eee; }
-  .table-wrap { overflow-x:auto; }
-  button {
-    padding:8px 12px;
-    border:none;
-    border-radius:5px;
-    background:#007BFF;
-    color:#fff;
-    cursor:pointer;
-  }
-  button:hover { background:#0056b3; }
+  :root { --bg:#f5f5f5; --card:#fff; --text:#111; --muted:#666; --brand:#007bff; --brand-d:#0056b3; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 20px; }
+  h1 { text-align: center; margin-bottom: 16px; }
+  .wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 20px; }
+  .card { background: var(--card); border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.12); padding: 16px; }
+  form label { display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 8px; margin: 10px 0; }
+  input, select, button { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; }
+  input:focus, select:focus { outline: none; border-color: var(--brand); }
+  button { border: none; background: var(--brand); color: #fff; cursor: pointer; }
+  button:hover { background: var(--brand-d); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1 1 220px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+  th { background: #eee; }
+  .muted { color: var(--muted); }
+  .toast { position: fixed; right: 16px; bottom: 16px; background: #222; color: #fff; padding: 10px 14px; border-radius: 8px; opacity: 0; transform: translateY(8px); transition: .25s; }
+  .toast.show { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
-
 <h1>Run Tracker</h1>
 
-<form id="runForm">
-  <label>Date:
-    <input type="date" id="date" required>
-  </label>
-  <label>Name:
-    <input type="text" id="name" required>
-  </label>
-  <label>Distance (km):
-    <input type="number" id="distance" step="0.01" required>
-  </label>
-  <label>Time (hh:mm:ss):
-    <!-- ✅ improved: enforce time input with seconds -->
-    <input type="time" id="time" step="1" required>
-  </label>
-  <button type="submit">Add Run</button>
-</form>
+<div class="wrap">
+  <!-- Add Run -->
+  <div class="card">
+    <form id="runForm" aria-label="Add new run">
+      <div class="row">
+        <label>Date:
+          <input type="date" id="date" required />
+        </label>
+        <label>Name:
+          <input type="text" id="name" placeholder="Your name" required />
+        </label>
+      </div>
+      <div class="row">
+        <label>Distance (km):
+          <input type="number" id="distance" step="0.01" min="0.01" placeholder="e.g. 5" required />
+        </label>
+        <label>Time (hh:mm:ss):
+          <input type="time" id="time" step="1" required />
+        </label>
+      </div>
+      <div class="row">
+        <button type="submit">Add Run</button>
+        <span class="muted" id="status" aria-live="polite"></span>
+      </div>
+    </form>
+  </div>
 
-<div class="filter">
-  <label for="filterSelect">Filter by Name:</label>
-  <select id="filterSelect">
-    <option value="">--All Names--</option>
-  </select>
-</div>
+  <!-- Filters -->
+  <div class="card">
+    <div class="row">
+      <label for="filterSelect">Filter by Name:
+        <select id="filterSelect">
+          <option value="">-- All Names --</option>
+        </select>
+      </label>
+      <button id="refreshBtn" type="button" style="max-width:160px">Refresh</button>
+    </div>
+  </div>
 
-<div class="activities">
-  <h2>Past Activities</h2>
-  <div class="table-wrap">
-    <table aria-live="polite">
-      <thead>
-        <tr><th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th></tr>
-      </thead>
-      <tbody id="activitiesTable"></tbody>
-    </table>
+  <!-- Past Activities -->
+  <div class="card">
+    <h2>Past Activities</h2>
+    <div class="table-wrap">
+      <table aria-live="polite">
+        <thead>
+          <tr>
+            <th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th>
+          </tr>
+        </thead>
+        <tbody id="activitiesTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <div class="table-wrap">
+      <table aria-live="polite">
+        <thead>
+          <tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badge</th></tr>
+        </thead>
+        <tbody id="leaderboardTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Support -->
+  <div class="card" style="text-align:center">
+    <h3>Support this App</h3>
+    <form action="https://www.paypal.com/donate" method="post" target="_top">
+      <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
+      <input type="image"
+             src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"
+             border="0" name="submit" alt="Donate with PayPal button"
+             style="max-width:100%;height:auto;" />
+    </form>
   </div>
 </div>
 
-<div class="leaderboard">
-  <h2>Leaderboard</h2>
-  <div class="table-wrap">
-    <table aria-live="polite">
-      <thead>
-        <tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badge</th></tr>
-      </thead>
-      <tbody id="leaderboardTable"></tbody>
-    </table>
-  </div>
-</div>
-
-<div class="ads" style="text-align:center;">
-  <h3>Support this App</h3>
-  <form action="https://www.paypal.com/donate" method="post" target="_top">
-    <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
-    <input type="image" 
-           src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"
-           border="0" name="submit" 
-           alt="Donate with PayPal button"
-           style="max-width:100%; height:auto;" />
-  </form>
-</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
-// ✅ Use Netlify Proxy instead of direct Apps Script
-const scriptUrl = "/api/proxy"";
+/* ===== Config (Vercel) ===== */
+const scriptUrl = "/api/proxy";
 
+/* ===== DOM ===== */
 const runForm = document.getElementById("runForm");
 const activitiesTable = document.getElementById("activitiesTable");
 const leaderboardTable = document.getElementById("leaderboardTable");
 const filterSelect = document.getElementById("filterSelect");
+const statusEl = document.getElementById("status");
+const refreshBtn = document.getElementById("refreshBtn");
 
-// --- Utility functions ---
+/* ===== Utils ===== */
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
 function timeToSeconds(t){
-  const p = t.split(":").map(Number);
-  if (p.some(isNaN)) return 0;
-  return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
+  if (!t) return 0;
+  // Accept "hh:mm" or "hh:mm:ss"
+  const parts = String(t).trim().split(":").map(Number);
+  const [h=0,m=0,s=0] = parts;
+  if ([h,m,s].some(n => Number.isNaN(n))) return 0;
+  return h*3600 + m*60 + s;
 }
 function secondsToHMS(sec){
-  const h=Math.floor(sec/3600);
-  const m=Math.floor((sec%3600)/60);
-  const s=sec%60;
-  return [h,m,s].map(x=>x.toString().padStart(2,"0")).join(":");
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec%3600)/60);
+  const s = Math.floor(sec%60);
+  return [h,m,s].map(x => String(x).padStart(2,"0")).join(":");
 }
-function calcPace(dist, timeStr){
-  const s = timeToSeconds(timeStr);
-  if(!dist || s===0) return "-";
-  const pace = s/60/dist;
-  const min = Math.floor(pace);
-  const sec = Math.round((pace-min)*60);
-  return `${min}:${String(sec).padStart(2,'0')}`;
+function calcPace(distanceKm, timeStr){
+  const secs = timeToSeconds(timeStr);
+  if (!distanceKm || distanceKm <= 0 || secs <= 0) return "-";
+  const pace = secs / distanceKm; // seconds/km
+  const m = Math.floor(pace/60);
+  const s = Math.round(pace % 60);
+  return `${m}:${String(s).padStart(2,"0")}`;
 }
 function getBadge(km) {
   if (km >= 42.2) return "🏅 Marathon";
@@ -155,94 +164,137 @@ function formatDate(dateStr) {
   return dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
 }
 
-// --- Fetch activities from backend ---
+/* ===== Data Fetch ===== */
 async function fetchActivities(){
-  const res = await fetch(scriptUrl);
-  const activities = await res.json();
+  statusEl.textContent = "Loading…";
+  try {
+    const res = await fetch(scriptUrl);
+    const activities = await res.json();
 
-  // Build filter dropdown
-  const prevValue = filterSelect.value;
-  filterSelect.innerHTML = '<option value="">--All Names--</option>';
-  [...new Set(activities.map(r=>r.name))].forEach(name=>{
-    const opt = document.createElement("option");
-    opt.value=name; 
-    opt.textContent=name;
-    if(name === prevValue) opt.selected=true;
-    filterSelect.appendChild(opt);
-  });
+    // Build filter dropdown (preserve selection)
+    const prev = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">-- All Names --</option>';
+    [...new Set(activities.map(r => r.name).filter(Boolean))].sort()
+      .forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name; opt.textContent = name;
+        if (name === prev) opt.selected = true;
+        filterSelect.appendChild(opt);
+      });
 
-  const filterName = filterSelect.value.trim().toLowerCase();
-  const filtered = filterName 
-    ? activities.filter(r=>r.name.toLowerCase() === filterName) 
-    : activities;
+    const filter = filterSelect.value.trim().toLowerCase();
+    const filtered = filter ? activities.filter(r => (r.name || "").toLowerCase() === filter) : activities;
 
-  // ✅ Past Activities Table
-  activitiesTable.innerHTML="";
-  if(filtered.length === 0){
-    activitiesTable.innerHTML = "<tr><td colspan='5'>No runs yet</td></tr>";
-  } else {
-    filtered.forEach(r=>{
-      const row=document.createElement("tr");
-      const cleanDate = formatDate(r.date);
+    // Activities table
+    activitiesTable.innerHTML = "";
+    if (filtered.length === 0) {
+      activitiesTable.innerHTML = "<tr><td colspan='5' class='muted'>No runs yet</td></tr>";
+    } else {
+      filtered.forEach(r => {
+        const tr = document.createElement("tr");
+        const date = formatDate(r.date);
+        const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
+        const time = (r.time || "").length === 5 ? r.time + ":00" : (r.time || "");
+        const pace = r.pace || calcPace(dist, time);
 
-      row.innerHTML=`
-        <td>${cleanDate}</td>
-        <td>${r.name}</td>
-        <td>${r.distance}</td>
-        <td>${r.time}</td>
-        <td>${calcPace(r.distance, r.time)}</td>`;
-      activitiesTable.appendChild(row);
+        tr.innerHTML = `
+          <td>${date}</td>
+          <td>${r.name || ""}</td>
+          <td>${dist ? dist.toFixed(2) : ""}</td>
+          <td>${time || ""}</td>
+          <td>${pace}</td>
+        `;
+        activitiesTable.appendChild(tr);
+      });
+    }
+
+    // Leaderboard
+    const summary = {};
+    activities.forEach(r => {
+      const name = r.name || "";
+      const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
+      const secs = timeToSeconds(r.time);
+      if (!summary[name]) summary[name] = { dist: 0, secs: 0 };
+      summary[name].dist += dist;
+      summary[name].secs += secs;
     });
-  }
 
-  // ✅ Leaderboard
-  const summary={};
-  activities.forEach(r=>{
-    const secs=timeToSeconds(r.time);
-    if(!summary[r.name]) summary[r.name]={dist:0,time:0};
-    // ✅ ensure commas don't break parseFloat
-    summary[r.name].dist += parseFloat(String(r.distance).replace(",", "."));
-    summary[r.name].time += secs;
-  });
+    const sorted = Object.entries(summary)
+      .filter(([name]) => name) // remove empty names
+      .sort((a,b) => b[1].dist - a[1].dist);
 
-  const sorted=Object.entries(summary).sort((a,b)=>b[1].dist-a[1].dist);
-  leaderboardTable.innerHTML="";
-  if(sorted.length === 0){
-    leaderboardTable.innerHTML = "<tr><td colspan='4'>No runners yet</td></tr>";
-  } else {
-    sorted.forEach(([name,vals])=>{
-      const row=document.createElement("tr");
-      row.innerHTML=`
-        <td>${name}</td>
-        <td>${vals.dist.toFixed(2)}</td>
-        <td>${secondsToHMS(vals.time)}</td>
-        <td>${getBadge(vals.dist)}</td>`;
-      leaderboardTable.appendChild(row);
-    });
+    leaderboardTable.innerHTML = "";
+    if (sorted.length === 0) {
+      leaderboardTable.innerHTML = "<tr><td colspan='4' class='muted'>No runners yet</td></tr>";
+    } else {
+      sorted.forEach(([name, vals]) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${name}</td>
+          <td>${vals.dist.toFixed(2)}</td>
+          <td>${secondsToHMS(vals.secs)}</td>
+          <td>${getBadge(vals.dist)}</td>
+        `;
+        leaderboardTable.appendChild(tr);
+      });
+    }
+
+  } catch (err) {
+    console.error(err);
+    toast("Failed to load activities");
+  } finally {
+    statusEl.textContent = "";
   }
 }
 
-// --- Form submission ---
-runForm.addEventListener("submit", async e=>{
+/* ===== Submit Handler ===== */
+runForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const data={
-    date:document.getElementById("date").value,
-    name:document.getElementById("name").value.trim(),
-    distance:document.getElementById("distance").value,
-    time:document.getElementById("time").value
+
+  const data = {
+    date: document.getElementById("date").value,
+    name: document.getElementById("name").value.trim(),
+    distance: document.getElementById("distance").value,
+    time: document.getElementById("time").value
   };
-  await fetch(scriptUrl,{
-    method:"POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
-  runForm.reset();
-  fetchActivities();
+
+  if (!data.date || !data.name || !data.distance || !data.time) {
+    toast("Fill Date, Name, Distance & Time");
+    return;
+  }
+
+  try {
+    const resp = await fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    let json = {};
+    try { json = await resp.json(); } catch {}
+
+    if (!resp.ok || json.ok === false) {
+      const msg = (json && (json.error || json.details)) || `Save failed (HTTP ${resp.status})`;
+      console.error("Save error:", json);
+      toast("Could not save: " + msg);
+      return;
+    }
+
+    runForm.reset();
+    toast("Run added");
+    await fetchActivities();
+  } catch (err) {
+    console.error(err);
+    toast("Network error while saving");
+  }
 });
 
+/* ===== Interactions ===== */
 filterSelect.addEventListener("change", fetchActivities);
+refreshBtn.addEventListener("click", fetchActivities);
+
+/* ===== Initial Load ===== */
 fetchActivities();
 </script>
 </body>
 </html>
-
