@@ -76,7 +76,6 @@
             <code id="timeDisplay">00:25:00</code>
             <button id="openTimePicker" type="button" class="btn-secondary">Pick Time</button>
           </span>
-          <!-- stores normalized HH:MM:SS -->
           <input type="hidden" id="time" value="00:25:00" />
         </label>
       </div>
@@ -232,7 +231,7 @@ function secondsToHMS(sec){
 function calcPace(distanceKm, timeStr){
   const secs = timeToSeconds(timeStr);
   if (!distanceKm || distanceKm <= 0 || secs <= 0) return "-";
-  const pace = secs / distanceKm; // seconds per km
+  const pace = secs / distanceKm;
   const m = Math.floor(pace/60);
   const s = Math.round(pace % 60);
   return `${m}:${pad2(s)}`;
@@ -275,7 +274,9 @@ openTimePicker.addEventListener("click", openPicker);
 tpCancel.addEventListener("click", closePicker);
 timeModal.addEventListener("click", (e)=>{ if (e.target === timeModal) closePicker(); });
 tpSet.addEventListener("click", ()=>{
-  const value = `${tpHours.value}:${tpMinutes.value}:${tpSeconds.value}`;
+  // 👇 force hours=00 if the toggle is off
+  const hours = enableHours.checked ? tpHours.value : "00";
+  const value = `${hours}:${tpMinutes.value}:${tpSeconds.value}`;
   timeHidden.value = value;
   timeDisplay.textContent = value;
   closePicker();
@@ -291,7 +292,7 @@ async function fetchActivities(){
     const res = await fetch(scriptUrl);
     const activities = await res.json();
 
-    // Build filter dropdown (preserve selection)
+    // Build filter dropdown
     const prev = filterSelect.value;
     filterSelect.innerHTML = '<option value="">-- All Names --</option>';
     [...new Set(activities.map(r => r.name).filter(Boolean))].sort()
@@ -305,7 +306,7 @@ async function fetchActivities(){
     const filter = filterSelect.value.trim().toLowerCase();
     const filtered = filter ? activities.filter(r => (r.name || "").toLowerCase() === filter) : activities;
 
-    // Activities table
+    // Activities
     activitiesTable.innerHTML = "";
     if (filtered.length === 0) {
       activitiesTable.innerHTML = "<tr><td colspan='5' class='muted'>No runs yet</td></tr>";
@@ -379,8 +380,6 @@ runForm.addEventListener("submit", async (e) => {
     toast("Fill Date, Name, Distance & Time");
     return;
   }
-
-  console.log("Submitting payload:", data); // debug—remove later
 
   try {
     const resp = await fetch(scriptUrl, {
