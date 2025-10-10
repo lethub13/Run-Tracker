@@ -37,20 +37,17 @@
     background: #fff; width: min(520px, 92vw); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
     padding: 16px;
   }
-  .modal h3 { margin: 0 0 12px 0; }
+  .modal h3 { margin: 0 0 10px 0; }
   .picker-grid {
-    display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 6px; align-items: center;
+    display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center;
   }
-  .picker-grid select {
-    font-size: 18px; padding: 8px 10px; height: 44px;
-  }
-  .colon { font-size: 20px; font-weight: 600; text-align: center; }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
-  .display-chip {
-    display: inline-flex; align-items: center; gap: 8px; border: 1px solid #ddd; border-radius: 6px;
-    padding: 8px 10px; background: #fafafa;
-  }
+  .picker-grid select { font-size: 18px; padding: 8px 10px; height: 44px; }
+  .colon { font-size: 20px; font-weight: 700; }
+  .modal-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; }
+  .left { display: flex; align-items: center; gap: 8px; }
+  .display-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; background: #fafafa; }
   .display-chip code { font-weight: 700; }
+  .hide { display: none; }
 </style>
 </head>
 <body>
@@ -79,7 +76,7 @@
             <code id="timeDisplay">00:25:00</code>
             <button id="openTimePicker" type="button" class="btn-secondary">Pick Time</button>
           </span>
-          <!-- stores the normalized HH:MM:SS -->
+          <!-- stores normalized HH:MM:SS -->
           <input type="hidden" id="time" value="00:25:00" />
         </label>
       </div>
@@ -145,20 +142,32 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<!-- Time Picker Modal -->
+<!-- Time Picker Modal (MM:SS with optional HH) -->
 <div id="timeModal" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="timeTitle">
     <h3 id="timeTitle">Select Duration</h3>
     <div class="picker-grid">
-      <select id="tpHours" aria-label="Hours"></select>
+      <label class="hide" id="labelH">H
+        <select id="tpHours" aria-label="Hours"></select>
+      </label>
+      <div class="colon hide" id="colonH">:</div>
+      <label>M
+        <select id="tpMinutes" aria-label="Minutes"></select>
+      </label>
       <div class="colon">:</div>
-      <select id="tpMinutes" aria-label="Minutes"></select>
-      <div class="colon">:</div>
-      <select id="tpSeconds" aria-label="Seconds"></select>
+      <label>S
+        <select id="tpSeconds" aria-label="Seconds"></select>
+      </label>
     </div>
     <div class="modal-actions">
-      <button type="button" id="tpCancel" class="btn-secondary">Cancel</button>
-      <button type="button" id="tpSet">Set</button>
+      <div class="left">
+        <input type="checkbox" id="enableHours" />
+        <label for="enableHours">Add hours</label>
+      </div>
+      <div>
+        <button type="button" id="tpCancel" class="btn-secondary">Cancel</button>
+        <button type="button" id="tpSet">Set</button>
+      </div>
     </div>
   </div>
 </div>
@@ -186,6 +195,9 @@ const tpMinutes = document.getElementById("tpMinutes");
 const tpSeconds = document.getElementById("tpSeconds");
 const tpSet = document.getElementById("tpSet");
 const tpCancel = document.getElementById("tpCancel");
+const enableHours = document.getElementById("enableHours");
+const labelH = document.getElementById("labelH");
+const colonH = document.getElementById("colonH");
 
 /* ===== Utils ===== */
 function toast(msg) {
@@ -203,7 +215,6 @@ function normalizeTimeStr(t) {
     const [h,m,ss] = s.split(":");
     return `${pad2(h)}:${m}:${ss}`;
   }
-  // fallback: keep as is
   return s;
 }
 function timeToSeconds(t){
@@ -248,16 +259,17 @@ function buildTimeOptions(){
     const o2 = document.createElement("option"); o2.value = pad2(m); o2.textContent = pad2(m); tpSeconds.appendChild(o2);
   }
 }
+function setHoursUI(enabled){
+  [labelH, colonH].forEach(el => el.classList.toggle("hide", !enabled));
+  if (!enabled) tpHours.value = "00";
+}
 function openPicker(){
-  // set current values
   const [h,m,s] = normalizeTimeStr(timeHidden.value || "00:25:00").split(":");
   tpHours.value = h; tpMinutes.value = m; tpSeconds.value = s;
-  timeModal.classList.add("show");
-  timeModal.setAttribute("aria-hidden","false");
+  timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false");
 }
 function closePicker(){
-  timeModal.classList.remove("show");
-  timeModal.setAttribute("aria-hidden","true");
+  timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true");
 }
 openTimePicker.addEventListener("click", openPicker);
 tpCancel.addEventListener("click", closePicker);
@@ -268,7 +280,9 @@ tpSet.addEventListener("click", ()=>{
   timeDisplay.textContent = value;
   closePicker();
 });
+enableHours.addEventListener("change", ()=> setHoursUI(enableHours.checked));
 buildTimeOptions();
+setHoursUI(false); // default: minutes+seconds only
 
 /* ===== Data Fetch ===== */
 async function fetchActivities(){
@@ -302,7 +316,6 @@ async function fetchActivities(){
         const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
         const time = normalizeTimeStr(r.time || "");
         const pace = r.pace || calcPace(dist, time);
-
         tr.innerHTML = `
           <td>${date}</td>
           <td>${r.name || ""}</td>
@@ -325,9 +338,7 @@ async function fetchActivities(){
       summary[name].secs += secs;
     });
 
-    const sorted = Object.entries(summary)
-      .filter(([name]) => name)
-      .sort((a,b) => b[1].dist - a[1].dist);
+    const sorted = Object.entries(summary).filter(([name]) => name).sort((a,b)=>b[1].dist - a[1].dist);
 
     leaderboardTable.innerHTML = "";
     if (sorted.length === 0) {
@@ -361,13 +372,15 @@ runForm.addEventListener("submit", async (e) => {
     date: document.getElementById("date").value,
     name: document.getElementById("name").value.trim(),
     distance: document.getElementById("distance").value,
-    time: normalizeTimeStr(timeHidden.value) // already HH:MM:SS from picker
+    time: normalizeTimeStr(timeHidden.value) // always HH:MM:SS
   };
 
   if (!data.date || !data.name || !data.distance || !data.time) {
     toast("Fill Date, Name, Distance & Time");
     return;
   }
+
+  console.log("Submitting payload:", data); // debug—remove later
 
   try {
     const resp = await fetch(scriptUrl, {
@@ -387,7 +400,6 @@ runForm.addEventListener("submit", async (e) => {
     }
 
     runForm.reset();
-    // reset default time to something sensible
     timeHidden.value = "00:25:00"; timeDisplay.textContent = "00:25:00";
     toast("Run added");
     await fetchActivities();
