@@ -46,8 +46,16 @@
         <label>Distance (km):
           <input type="number" id="distance" step="0.01" min="0.01" placeholder="e.g. 5" required />
         </label>
-        <label>Time (hh:mm:ss):
-          <input type="time" id="time" step="1" required />
+        <label>Time (mm:ss or hh:mm:ss):
+          <!-- duration input (not time-of-day) -->
+          <input
+            type="text"
+            id="time"
+            inputmode="numeric"
+            placeholder="23:50 or 00:23:50"
+            pattern="^(\d{1,2}:[0-5]\d(:[0-5]\d)?)$"
+            required
+          />
         </label>
       </div>
       <div class="row">
@@ -131,12 +139,34 @@ function toast(msg) {
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2200);
 }
+// Accepts "mm:ss" or "hh:mm:ss" and converts to duration "HH:MM:SS"
+function coerceDuration(val) {
+  if (!val) return "";
+  const s = String(val).trim();
+
+  // mm:ss -> 00:mm:ss
+  let m = s.match(/^(\d{1,2}):([0-5]\d)$/);
+  if (m) return `00:${m[1].padStart(2,"0")}:${m[2]}`;
+
+  // hh:mm:ss
+  m = s.match(/^(\d{1,2}):([0-5]\d):([0-5]\d)$/);
+  if (m) {
+    const h = parseInt(m[1], 10);
+    // If user typed "23:50:00" thinking it's 23m50s, coerce to 00:23:50
+    if (h >= 13 && h <= 23) return `00:${m[1].padStart(2,"0")}:${m[2]}`;
+    return `${m[1].padStart(2,"0")}:${m[2]}:${m[3]}`;
+  }
+
+  if (s.includes("T")) return s.split("T")[1].slice(0,8); // ISO -> HH:MM:SS
+  return s;
+}
 function normalizeTimeStr(t) {
-  if (!t) return "";
-  const s = String(t).trim();
-  if (s.includes("T")) return s.split("T")[1].slice(0,8); // ISO → HH:mm:ss
-  if (/^\d{1,2}:\d{2}$/.test(s)) return s + ":00";
-  if (/^\d{1,2}:\d{2}:\d{2}$/.test(s)) return s;
+  const s = coerceDuration(t);
+  if (/^\d{1,2}:[0-5]\d$/.test(s)) return `00:${s}`;
+  if (/^\d{1,2}:[0-5]\d:[0-5]\d$/.test(s)) {
+    const [a,b,c] = s.split(":");
+    return `${a.padStart(2,"0")}:${b}:${c}`;
+  }
   return s;
 }
 function timeToSeconds(t){
@@ -228,7 +258,7 @@ async function fetchActivities(){
     });
 
     const sorted = Object.entries(summary)
-      .filter(([name]) => name) // remove empty names
+      .filter(([name]) => name)
       .sort((a,b) => b[1].dist - a[1].dist);
 
     leaderboardTable.innerHTML = "";
@@ -263,7 +293,7 @@ runForm.addEventListener("submit", async (e) => {
     date: document.getElementById("date").value,
     name: document.getElementById("name").value.trim(),
     distance: document.getElementById("distance").value,
-    time: document.getElementById("time").value
+    time: coerceDuration(document.getElementById("time").value) // duration-safe
   };
 
   if (!data.date || !data.name || !data.distance || !data.time) {
