@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Run Tracker</title>
 <style>
-  :root { --bg:#f5f5f5; --card:#fff; --text:#111; --muted:#666; --brand:#007bff; --brand-d:#0056b3; }
+  :root { --bg:#f5f5f5; --card:#fff; --text:#111; --muted:#666; --brand:#007bff; --brand-d:#0056b3; --overlay:rgba(0,0,0,.5);}
   * { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 20px; }
   h1 { text-align: center; margin-bottom: 16px; }
@@ -25,6 +25,20 @@
   .muted { color: var(--muted); }
   .toast { position: fixed; right: 16px; bottom: 16px; background: #222; color: #fff; padding: 10px 14px; border-radius: 8px; opacity: 0; transform: translateY(8px); transition: .25s; }
   .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ===== Modal time picker ===== */
+  .modal-overlay { position: fixed; inset: 0; background: var(--overlay); display: none; align-items: flex-end; justify-content: center; }
+  .modal { width: 100%; max-width: 520px; background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,.25); padding: 16px; }
+  .modal header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .modal .wheels { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 8px 0; }
+  .modal .wheel { position: relative; height: 180px; overflow-y: auto; border: 1px solid #ddd; border-radius: 12px; scroll-snap-type: y mandatory; background: #fafafa; }
+  .wheel::-webkit-scrollbar { width: 0; height: 0; }
+  .wheel .item { height: 40px; display: grid; place-items: center; font-size: 18px; scroll-snap-align: center; }
+  .modal .mask { position: absolute; left: 0; right: 0; top: 70px; height: 40px; border-top: 2px solid var(--brand); border-bottom: 2px solid var(--brand); pointer-events: none; }
+  .modal footer { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-ghost { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+  .time-input-wrap { display:flex; gap:8px; align-items:center; }
+  .time-display { flex:1; }
 </style>
 </head>
 <body>
@@ -46,16 +60,11 @@
         <label>Distance (km):
           <input type="number" id="distance" step="0.01" min="0.01" placeholder="e.g. 5" required />
         </label>
-        <label>Time (mm:ss or hh:mm:ss):
-          <!-- duration input (not time-of-day) -->
-          <input
-            type="text"
-            id="time"
-            inputmode="numeric"
-            placeholder="23:50 or 00:23:50"
-            pattern="^(\d{1,2}:[0-5]\d(:[0-5]\d)?)$"
-            required
-          />
+        <label>Time (duration):
+          <div class="time-input-wrap">
+            <input class="time-display" id="time" type="text" placeholder="HH:MM:SS" readonly required />
+            <button id="openTimePicker" type="button">Select</button>
+          </div>
         </label>
       </div>
       <div class="row">
@@ -120,6 +129,24 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<!-- ===== Modal time picker (popup) ===== -->
+<div id="timeModal" class="modal-overlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="timeTitle">
+    <header>
+      <strong id="timeTitle">Select Duration</strong>
+      <button id="closeTimePicker" type="button" class="btn-ghost">Close</button>
+    </header>
+    <div class="wheels">
+      <div class="wheel" id="wheelH" aria-label="Hours"><div class="mask"></div></div>
+      <div class="wheel" id="wheelM" aria-label="Minutes"><div class="mask"></div></div>
+      <div class="wheel" id="wheelS" aria-label="Seconds"><div class="mask"></div></div>
+    </div>
+    <footer>
+      <button id="setTime" type="button">Set Time</button>
+    </footer>
+  </div>
+</div>
+
 <script>
 /* ===== Config (Vercel) ===== */
 const scriptUrl = "/api/proxy";
@@ -131,57 +158,48 @@ const leaderboardTable = document.getElementById("leaderboardTable");
 const filterSelect = document.getElementById("filterSelect");
 const statusEl = document.getElementById("status");
 const refreshBtn = document.getElementById("refreshBtn");
+const timeInput = document.getElementById("time");
+const openTimePickerBtn = document.getElementById("openTimePicker");
+const closeTimePickerBtn = document.getElementById("closeTimePicker");
+const timeModal = document.getElementById("timeModal");
+const setTimeBtn = document.getElementById("setTime");
+const wheelH = document.getElementById("wheelH");
+const wheelM = document.getElementById("wheelM");
+const wheelS = document.getElementById("wheelS");
 
-/* ===== Utils ===== */
+/* ===== Toast ===== */
 function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2200);
 }
-// Accepts "mm:ss" or "hh:mm:ss" and converts to duration "HH:MM:SS"
-function coerceDuration(val) {
-  if (!val) return "";
-  const s = String(val).trim();
 
-  // mm:ss -> 00:mm:ss
-  let m = s.match(/^(\d{1,2}):([0-5]\d)$/);
-  if (m) return `00:${m[1].padStart(2,"0")}:${m[2]}`;
-
-  // hh:mm:ss
-  m = s.match(/^(\d{1,2}):([0-5]\d):([0-5]\d)$/);
-  if (m) {
-    const h = parseInt(m[1], 10);
-    // If user typed "23:50:00" thinking it's 23m50s, coerce to 00:23:50
-    if (h >= 13 && h <= 23) return `00:${m[1].padStart(2,"0")}:${m[2]}`;
-    return `${m[1].padStart(2,"0")}:${m[2]}:${m[3]}`;
-  }
-
-  if (s.includes("T")) return s.split("T")[1].slice(0,8); // ISO -> HH:MM:SS
-  return s;
-}
+/* ===== Duration helpers ===== */
+function pad2(n){ return String(n).padStart(2,"0"); }
 function normalizeTimeStr(t) {
-  const s = coerceDuration(t);
+  if (!t) return "";
+  const s = String(t).trim();
   if (/^\d{1,2}:[0-5]\d$/.test(s)) return `00:${s}`;
   if (/^\d{1,2}:[0-5]\d:[0-5]\d$/.test(s)) {
     const [a,b,c] = s.split(":");
-    return `${a.padStart(2,"0")}:${b}:${c}`;
+    return `${pad2(a)}:${b}:${c}`;
   }
+  if (s.includes("T")) return s.split("T")[1].slice(0,8);
   return s;
 }
 function timeToSeconds(t){
   const s = normalizeTimeStr(t);
   if (!s) return 0;
-  const parts = s.split(":").map(Number);
-  const [h=0,m=0,s2=0] = parts;
-  if ([h,m,s2].some(n => Number.isNaN(n))) return 0;
+  const [h=0,m=0,s2=0] = s.split(":").map(Number);
+  if ([h,m,s2].some(Number.isNaN)) return 0;
   return h*3600 + m*60 + s2;
 }
 function secondsToHMS(sec){
   const h = Math.floor(sec/3600);
   const m = Math.floor((sec%3600)/60);
   const s = Math.floor(sec%60);
-  return [h,m,s].map(x => String(x).padStart(2,"0")).join(":");
+  return [h,m,s].map(pad2).join(":");
 }
 function calcPace(distanceKm, timeStr){
   const secs = timeToSeconds(timeStr);
@@ -189,7 +207,7 @@ function calcPace(distanceKm, timeStr){
   const pace = secs / distanceKm; // seconds/km
   const m = Math.floor(pace/60);
   const s = Math.round(pace % 60);
-  return `${m}:${String(s).padStart(2,"0")}`;
+  return `${m}:${pad2(s)}`;
 }
 function getBadge(km) {
   if (km >= 42.2) return "🏅 Marathon";
@@ -201,6 +219,74 @@ function formatDate(dateStr) {
   if (!dateStr) return "";
   return dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
 }
+
+/* ===== Time Modal (rolling selector) ===== */
+function buildWheel(el, max){
+  // add top/bottom spacers so center aligns nicely
+  const spacer = document.createElement("div");
+  spacer.className = "item";
+  spacer.style.visibility = "hidden";
+  spacer.style.height = "70px";
+  el.appendChild(spacer.cloneNode());
+
+  for (let i=0;i<=max;i++){
+    const d = document.createElement("div");
+    d.className = "item";
+    d.textContent = pad2(i);
+    el.appendChild(d);
+  }
+
+  el.appendChild(spacer.cloneNode());
+}
+
+function openTimeModal(initial="00:00:00"){
+  // lazy build once
+  if (!wheelH.dataset.built){
+    buildWheel(wheelH, 23);
+    buildWheel(wheelM, 59);
+    buildWheel(wheelS, 59);
+    wheelH.dataset.built = wheelM.dataset.built = wheelS.dataset.built = "1";
+  }
+
+  const parts = normalizeTimeStr(initial || "00:00:00").split(":").map(n=>parseInt(n||"0",10));
+  const [h=0,m=0,s=0] = parts;
+
+  // scroll so selected numbers are centered under the mask
+  const itemH = 40; // must match CSS .item height
+  const offset = 70; // mask top offset in CSS
+  wheelH.scrollTop = (h * itemH);
+  wheelM.scrollTop = (m * itemH);
+  wheelS.scrollTop = (s * itemH);
+
+  timeModal.style.display = "flex";
+  timeModal.setAttribute("aria-hidden","false");
+}
+
+function closeTimeModal(){
+  timeModal.style.display = "none";
+  timeModal.setAttribute("aria-hidden","true");
+}
+
+function getWheelValue(el, max){
+  // round to nearest item
+  const itemH = 40;
+  let idx = Math.round(el.scrollTop / itemH);
+  if (idx < 0) idx = 0;
+  if (idx > max) idx = max;
+  return idx;
+}
+
+openTimePickerBtn.addEventListener("click", () => openTimeModal(timeInput.value));
+closeTimePickerBtn.addEventListener("click", closeTimeModal);
+timeModal.addEventListener("click", (e)=>{ if (e.target === timeModal) closeTimeModal(); });
+
+setTimeBtn.addEventListener("click", () => {
+  const h = getWheelValue(wheelH, 23);
+  const m = getWheelValue(wheelM, 59);
+  const s = getWheelValue(wheelS, 59);
+  timeInput.value = `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  closeTimeModal();
+});
 
 /* ===== Data Fetch ===== */
 async function fetchActivities(){
@@ -293,7 +379,7 @@ runForm.addEventListener("submit", async (e) => {
     date: document.getElementById("date").value,
     name: document.getElementById("name").value.trim(),
     distance: document.getElementById("distance").value,
-    time: coerceDuration(document.getElementById("time").value) // duration-safe
+    time: normalizeTimeStr(timeInput.value) // already HH:MM:SS from picker
   };
 
   if (!data.date || !data.name || !data.distance || !data.time) {
