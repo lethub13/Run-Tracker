@@ -28,19 +28,11 @@
   .toast.show { opacity: 1; transform: translateY(0); }
 
   /* Modal (time picker) */
-  .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,.35);
-    display: none; align-items: center; justify-content: center; z-index: 50;
-  }
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: center; justify-content: center; z-index: 50; }
   .modal-backdrop.show { display: flex; }
-  .modal {
-    background: #fff; width: min(520px, 92vw); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    padding: 16px;
-  }
+  .modal { background: #fff; width: min(520px, 92vw); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); padding: 16px; }
   .modal h3 { margin: 0 0 10px 0; }
-  .picker-grid {
-    display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center;
-  }
+  .picker-grid { display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; }
   .picker-grid select { font-size: 18px; padding: 8px 10px; height: 44px; }
   .colon { font-size: 20px; font-weight: 700; }
   .modal-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; }
@@ -131,10 +123,7 @@
     <h3>Support this App</h3>
     <form action="https://www.paypal.com/donate" method="post" target="_top">
       <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
-      <input type="image"
-             src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"
-             border="0" name="submit" alt="Donate with PayPal button"
-             style="max-width:100%;height:auto;" />
+      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="Donate with PayPal button" style="max-width:100%;height:auto;" />
     </form>
   </div>
 </div>
@@ -200,8 +189,7 @@ const colonH = document.getElementById("colonH");
 
 /* ===== Utils ===== */
 function toast(msg) {
-  toastEl.textContent = msg;
-  toastEl.classList.add("show");
+  toastEl.textContent = msg; toastEl.classList.add("show");
   setTimeout(() => toastEl.classList.remove("show"), 2200);
 }
 function pad2(n){ return String(n).padStart(2,"0"); }
@@ -242,40 +230,29 @@ function getBadge(km) {
   if (km >= 10) return "🥉 10K";
   return "";
 }
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  return dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
-}
+function formatDate(dateStr) { return dateStr && dateStr.includes("T") ? dateStr.split("T")[0] : (dateStr||""); }
 
 /* ===== Time Picker ===== */
 function buildTimeOptions(){
   tpHours.innerHTML = ""; tpMinutes.innerHTML = ""; tpSeconds.innerHTML = "";
-  for (let h=0; h<=23; h++){
-    const o = document.createElement("option"); o.value = pad2(h); o.textContent = pad2(h); tpHours.appendChild(o);
-  }
+  for (let h=0; h<=23; h++){ const o = document.createElement("option"); o.value = pad2(h); o.textContent = pad2(h); tpHours.appendChild(o); }
   for (let m=0; m<=59; m++){
     const o1 = document.createElement("option"); o1.value = pad2(m); o1.textContent = pad2(m); tpMinutes.appendChild(o1);
     const o2 = document.createElement("option"); o2.value = pad2(m); o2.textContent = pad2(m); tpSeconds.appendChild(o2);
   }
 }
-function setHoursUI(enabled){
-  [labelH, colonH].forEach(el => el.classList.toggle("hide", !enabled));
-  if (!enabled) tpHours.value = "00";
-}
+function setHoursUI(enabled){ [labelH, colonH].forEach(el => el.classList.toggle("hide", !enabled)); if (!enabled) tpHours.value = "00"; }
 function openPicker(){
   const [h,m,s] = normalizeTimeStr(timeHidden.value || "00:25:00").split(":");
   tpHours.value = h; tpMinutes.value = m; tpSeconds.value = s;
   timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false");
 }
-function closePicker(){
-  timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true");
-}
+function closePicker(){ timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true"); }
 openTimePicker.addEventListener("click", openPicker);
 tpCancel.addEventListener("click", closePicker);
 timeModal.addEventListener("click", (e)=>{ if (e.target === timeModal) closePicker(); });
 tpSet.addEventListener("click", ()=>{
-  // 👇 force hours=00 if the toggle is off
-  const hours = enableHours.checked ? tpHours.value : "00";
+  const hours = enableHours.checked ? tpHours.value : "00"; // force HH=00 if toggle off
   const value = `${hours}:${tpMinutes.value}:${tpSeconds.value}`;
   timeHidden.value = value;
   timeDisplay.textContent = value;
@@ -289,7 +266,7 @@ setHoursUI(false); // default: minutes+seconds only
 async function fetchActivities(){
   statusEl.textContent = "Loading…";
   try {
-    const res = await fetch(scriptUrl);
+    const res = await fetch(scriptUrl, { cache: "no-store" });
     const activities = await res.json();
 
     // Build filter dropdown
@@ -312,18 +289,17 @@ async function fetchActivities(){
       activitiesTable.innerHTML = "<tr><td colspan='5' class='muted'>No runs yet</td></tr>";
     } else {
       filtered.forEach(r => {
-        const tr = document.createElement("tr");
         const date = formatDate(r.date);
         const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
         const time = normalizeTimeStr(r.time || "");
         const pace = r.pace || calcPace(dist, time);
+        const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${date}</td>
           <td>${r.name || ""}</td>
           <td>${dist ? dist.toFixed(2) : ""}</td>
           <td>${time || ""}</td>
-          <td>${pace}</td>
-        `;
+          <td>${pace}</td>`;
         activitiesTable.appendChild(tr);
       });
     }
@@ -338,9 +314,7 @@ async function fetchActivities(){
       summary[name].dist += dist;
       summary[name].secs += secs;
     });
-
-    const sorted = Object.entries(summary).filter(([name]) => name).sort((a,b)=>b[1].dist - a[1].dist);
-
+    const sorted = Object.entries(summary).filter(([n])=>n).sort((a,b)=>b[1].dist - a[1].dist);
     leaderboardTable.innerHTML = "";
     if (sorted.length === 0) {
       leaderboardTable.innerHTML = "<tr><td colspan='4' class='muted'>No runners yet</td></tr>";
@@ -351,12 +325,10 @@ async function fetchActivities(){
           <td>${name}</td>
           <td>${vals.dist.toFixed(2)}</td>
           <td>${secondsToHMS(vals.secs)}</td>
-          <td>${getBadge(vals.dist)}</td>
-        `;
+          <td>${getBadge(vals.dist)}</td>`;
         leaderboardTable.appendChild(tr);
       });
     }
-
   } catch (err) {
     console.error(err);
     toast("Failed to load activities");
@@ -373,24 +345,18 @@ runForm.addEventListener("submit", async (e) => {
     date: document.getElementById("date").value,
     name: document.getElementById("name").value.trim(),
     distance: document.getElementById("distance").value,
-    time: normalizeTimeStr(timeHidden.value) // always HH:MM:SS
+    time: normalizeTimeStr(timeHidden.value),        // always HH:MM:SS
+    hoursEnabled: enableHours.checked === true       // tell server if hours were intended
   };
-
-  if (!data.date || !data.name || !data.distance || !data.time) {
-    toast("Fill Date, Name, Distance & Time");
-    return;
-  }
 
   try {
     const resp = await fetch(scriptUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      cache: "no-store"
     });
-
-    let json = {};
-    try { json = await resp.json(); } catch {}
-
+    const json = await resp.json().catch(()=>({}));
     if (!resp.ok || json.ok === false) {
       const msg = (json && (json.error || json.details)) || `Save failed (HTTP ${resp.status})`;
       console.error("Save error:", json);
