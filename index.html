@@ -131,13 +131,21 @@ function toast(msg) {
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2200);
 }
+function normalizeTimeStr(t) {
+  if (!t) return "";
+  const s = String(t).trim();
+  if (s.includes("T")) return s.split("T")[1].slice(0,8); // ISO → HH:mm:ss
+  if (/^\d{1,2}:\d{2}$/.test(s)) return s + ":00";
+  if (/^\d{1,2}:\d{2}:\d{2}$/.test(s)) return s;
+  return s;
+}
 function timeToSeconds(t){
-  if (!t) return 0;
-  // Accept "hh:mm" or "hh:mm:ss"
-  const parts = String(t).trim().split(":").map(Number);
-  const [h=0,m=0,s=0] = parts;
-  if ([h,m,s].some(n => Number.isNaN(n))) return 0;
-  return h*3600 + m*60 + s;
+  const s = normalizeTimeStr(t);
+  if (!s) return 0;
+  const parts = s.split(":").map(Number);
+  const [h=0,m=0,s2=0] = parts;
+  if ([h,m,s2].some(n => Number.isNaN(n))) return 0;
+  return h*3600 + m*60 + s2;
 }
 function secondsToHMS(sec){
   const h = Math.floor(sec/3600);
@@ -194,7 +202,7 @@ async function fetchActivities(){
         const tr = document.createElement("tr");
         const date = formatDate(r.date);
         const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
-        const time = (r.time || "").length === 5 ? r.time + ":00" : (r.time || "");
+        const time = normalizeTimeStr(r.time || "");
         const pace = r.pace || calcPace(dist, time);
 
         tr.innerHTML = `
