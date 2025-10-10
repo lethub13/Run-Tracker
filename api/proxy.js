@@ -1,7 +1,9 @@
 // api/proxy.js
 export default async function handler(req, res) {
   const target = process.env.APPS_SCRIPT_URL;
-  if (!target) return res.status(500).json({ ok:false, error:"Missing APPS_SCRIPT_URL" });
+  if (!target) {
+    return res.status(500).json({ ok: false, error: "Missing APPS_SCRIPT_URL env var" });
+  }
 
   // CORS + NO CACHE
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -16,10 +18,13 @@ export default async function handler(req, res) {
     let body;
 
     if (method === "POST") {
-      if (req.body && Object.keys(req.body).length) body = JSON.stringify(req.body);
-      else {
-        body = await new Promise(r => {
-          let d=""; req.on("data", c => d+=c); req.on("end", () => r(d || "{}"));
+      if (req.body && Object.keys(req.body).length) {
+        body = JSON.stringify(req.body);
+      } else {
+        body = await new Promise((resolve) => {
+          let data = "";
+          req.on("data", (c) => (data += c));
+          req.on("end", () => resolve(data || "{}"));
         });
       }
       headers["Content-Type"] = "application/json";
@@ -27,9 +32,19 @@ export default async function handler(req, res) {
 
     const upstream = await fetch(target, { method, headers, body, cache: "no-store" });
     const text = await upstream.text();
-    try { return res.status(upstream.ok ? 200 : 502).json(JSON.parse(text)); }
-    catch { return res.status(upstream.ok ? 200 : 502).json({ ok: upstream.ok, status: upstream.status, body: text }); }
-  } catch (e) {
-    return res.status(500).json({ ok:false, error:"Proxy failed", details:String(e) });
+
+    try {
+      const json = JSON.parse(text);
+      return res.status(upstream.ok ? 200 : 502).json(json);
+    } catch {
+      return res.status(upstream.ok ? 200 : 502).json({
+        ok: upstream.ok,
+        status: upstream.status,
+        note: "Apps Script did not return JSON",
+        body: text
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({ ok:false, error: "Proxy failed", details: String(err) });
   }
 }
