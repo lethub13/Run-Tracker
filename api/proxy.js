@@ -5,7 +5,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Missing APPS_SCRIPT_URL env var" });
   }
 
-  // CORS (safe even if same-origin)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -20,7 +19,6 @@ export default async function handler(req, res) {
       if (req.body && Object.keys(req.body).length) {
         body = JSON.stringify(req.body);
       } else {
-        // fallback for raw body
         body = await new Promise((resolve) => {
           let data = "";
           req.on("data", (c) => (data += c));
