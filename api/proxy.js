@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Missing APPS_SCRIPT_URL env var" });
   }
 
-  // Basic CORS (safe even if same-origin)
+  // CORS (safe even if same-origin)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -17,30 +17,26 @@ export default async function handler(req, res) {
     let body;
 
     if (method === "POST") {
-      // Vercel parses JSON for us when Content-Type: application/json
       if (req.body && Object.keys(req.body).length) {
         body = JSON.stringify(req.body);
-        headers["Content-Type"] = "application/json";
       } else {
-        // Fallback: manually read stream
+        // fallback for raw body
         body = await new Promise((resolve) => {
           let data = "";
           req.on("data", (c) => (data += c));
           req.on("end", () => resolve(data || "{}"));
         });
-        headers["Content-Type"] = "application/json";
       }
+      headers["Content-Type"] = "application/json";
     }
 
     const upstream = await fetch(target, { method, headers, body });
     const text = await upstream.text();
 
-    // Try JSON
     try {
       const json = JSON.parse(text);
       return res.status(upstream.ok ? 200 : 502).json(json);
     } catch {
-      // Non-JSON response from Apps Script
       return res.status(upstream.ok ? 200 : 502).json({
         ok: upstream.ok,
         status: upstream.status,
@@ -49,6 +45,6 @@ export default async function handler(req, res) {
       });
     }
   } catch (err) {
-    return res.status(500).json({ ok: false, error: "Proxy failed", details: String(err) });
+    return res.status(500).json({ ok:false, error: "Proxy failed", details: String(err) });
   }
 }
