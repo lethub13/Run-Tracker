@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Run Tracker</title>
 <style>
-  :root { --bg:#f5f5f5; --card:#fff; --text:#111; --muted:#666; --brand:#007bff; --brand-d:#0056b3; --overlay:rgba(0,0,0,.5);}
+  :root { --bg:#f5f5f5; --card:#fff; --text:#111; --muted:#666; --brand:#007bff; --brand-d:#0056b3; }
   * { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 20px; }
   h1 { text-align: center; margin-bottom: 16px; }
@@ -13,9 +13,10 @@
   .card { background: var(--card); border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.12); padding: 16px; }
   form label { display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 8px; margin: 10px 0; }
   input, select, button { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; }
-  input:focus, select:focus { outline: none; border-color: var(--brand); }
-  button { border: none; background: var(--brand); color: #fff; cursor: pointer; }
+  input:focus, select:focus, button:focus { outline: none; border-color: var(--brand); }
+  button { border: 1px solid transparent; background: var(--brand); color: #fff; cursor: pointer; }
   button:hover { background: var(--brand-d); }
+  .btn-secondary { background: #eee; color: #111; border-color: #ddd; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
   .row > * { flex: 1 1 220px; }
   .table-wrap { overflow-x: auto; }
@@ -26,19 +27,30 @@
   .toast { position: fixed; right: 16px; bottom: 16px; background: #222; color: #fff; padding: 10px 14px; border-radius: 8px; opacity: 0; transform: translateY(8px); transition: .25s; }
   .toast.show { opacity: 1; transform: translateY(0); }
 
-  /* ===== Modal time picker ===== */
-  .modal-overlay { position: fixed; inset: 0; background: var(--overlay); display: none; align-items: flex-end; justify-content: center; }
-  .modal { width: 100%; max-width: 520px; background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,.25); padding: 16px; }
-  .modal header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .modal .wheels { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 8px 0; }
-  .modal .wheel { position: relative; height: 180px; overflow-y: auto; border: 1px solid #ddd; border-radius: 12px; scroll-snap-type: y mandatory; background: #fafafa; }
-  .wheel::-webkit-scrollbar { width: 0; height: 0; }
-  .wheel .item { height: 40px; display: grid; place-items: center; font-size: 18px; scroll-snap-align: center; }
-  .modal .mask { position: absolute; left: 0; right: 0; top: 70px; height: 40px; border-top: 2px solid var(--brand); border-bottom: 2px solid var(--brand); pointer-events: none; }
-  .modal footer { display: flex; gap: 10px; justify-content: flex-end; }
-  .btn-ghost { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
-  .time-input-wrap { display:flex; gap:8px; align-items:center; }
-  .time-display { flex:1; }
+  /* Modal (time picker) */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    display: none; align-items: center; justify-content: center; z-index: 50;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: #fff; width: min(520px, 92vw); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    padding: 16px;
+  }
+  .modal h3 { margin: 0 0 12px 0; }
+  .picker-grid {
+    display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 6px; align-items: center;
+  }
+  .picker-grid select {
+    font-size: 18px; padding: 8px 10px; height: 44px;
+  }
+  .colon { font-size: 20px; font-weight: 600; text-align: center; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+  .display-chip {
+    display: inline-flex; align-items: center; gap: 8px; border: 1px solid #ddd; border-radius: 6px;
+    padding: 8px 10px; background: #fafafa;
+  }
+  .display-chip code { font-weight: 700; }
 </style>
 </head>
 <body>
@@ -60,11 +72,15 @@
         <label>Distance (km):
           <input type="number" id="distance" step="0.01" min="0.01" placeholder="e.g. 5" required />
         </label>
+
+        <!-- Rolling Time Picker trigger + display -->
         <label>Time (duration):
-          <div class="time-input-wrap">
-            <input class="time-display" id="time" type="text" placeholder="HH:MM:SS" readonly required />
-            <button id="openTimePicker" type="button">Select</button>
-          </div>
+          <span class="display-chip">
+            <code id="timeDisplay">00:25:00</code>
+            <button id="openTimePicker" type="button" class="btn-secondary">Pick Time</button>
+          </span>
+          <!-- stores the normalized HH:MM:SS -->
+          <input type="hidden" id="time" value="00:25:00" />
         </label>
       </div>
       <div class="row">
@@ -129,21 +145,21 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<!-- ===== Modal time picker (popup) ===== -->
-<div id="timeModal" class="modal-overlay" aria-hidden="true">
+<!-- Time Picker Modal -->
+<div id="timeModal" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="timeTitle">
-    <header>
-      <strong id="timeTitle">Select Duration</strong>
-      <button id="closeTimePicker" type="button" class="btn-ghost">Close</button>
-    </header>
-    <div class="wheels">
-      <div class="wheel" id="wheelH" aria-label="Hours"><div class="mask"></div></div>
-      <div class="wheel" id="wheelM" aria-label="Minutes"><div class="mask"></div></div>
-      <div class="wheel" id="wheelS" aria-label="Seconds"><div class="mask"></div></div>
+    <h3 id="timeTitle">Select Duration</h3>
+    <div class="picker-grid">
+      <select id="tpHours" aria-label="Hours"></select>
+      <div class="colon">:</div>
+      <select id="tpMinutes" aria-label="Minutes"></select>
+      <div class="colon">:</div>
+      <select id="tpSeconds" aria-label="Seconds"></select>
     </div>
-    <footer>
-      <button id="setTime" type="button">Set Time</button>
-    </footer>
+    <div class="modal-actions">
+      <button type="button" id="tpCancel" class="btn-secondary">Cancel</button>
+      <button type="button" id="tpSet">Set</button>
+    </div>
   </div>
 </div>
 
@@ -158,42 +174,43 @@ const leaderboardTable = document.getElementById("leaderboardTable");
 const filterSelect = document.getElementById("filterSelect");
 const statusEl = document.getElementById("status");
 const refreshBtn = document.getElementById("refreshBtn");
-const timeInput = document.getElementById("time");
-const openTimePickerBtn = document.getElementById("openTimePicker");
-const closeTimePickerBtn = document.getElementById("closeTimePicker");
+const toastEl = document.getElementById("toast");
+
+/* Time widgets */
+const timeHidden = document.getElementById("time");
+const timeDisplay = document.getElementById("timeDisplay");
+const openTimePicker = document.getElementById("openTimePicker");
 const timeModal = document.getElementById("timeModal");
-const setTimeBtn = document.getElementById("setTime");
-const wheelH = document.getElementById("wheelH");
-const wheelM = document.getElementById("wheelM");
-const wheelS = document.getElementById("wheelS");
+const tpHours = document.getElementById("tpHours");
+const tpMinutes = document.getElementById("tpMinutes");
+const tpSeconds = document.getElementById("tpSeconds");
+const tpSet = document.getElementById("tpSet");
+const tpCancel = document.getElementById("tpCancel");
 
-/* ===== Toast ===== */
+/* ===== Utils ===== */
 function toast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2200);
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  setTimeout(() => toastEl.classList.remove("show"), 2200);
 }
-
-/* ===== Duration helpers ===== */
 function pad2(n){ return String(n).padStart(2,"0"); }
 function normalizeTimeStr(t) {
-  if (!t) return "";
+  if (!t) return "00:00:00";
   const s = String(t).trim();
+  if (s.includes("T")) return s.split("T")[1].slice(0,8);
   if (/^\d{1,2}:[0-5]\d$/.test(s)) return `00:${s}`;
   if (/^\d{1,2}:[0-5]\d:[0-5]\d$/.test(s)) {
-    const [a,b,c] = s.split(":");
-    return `${pad2(a)}:${b}:${c}`;
+    const [h,m,ss] = s.split(":");
+    return `${pad2(h)}:${m}:${ss}`;
   }
-  if (s.includes("T")) return s.split("T")[1].slice(0,8);
+  // fallback: keep as is
   return s;
 }
 function timeToSeconds(t){
   const s = normalizeTimeStr(t);
-  if (!s) return 0;
-  const [h=0,m=0,s2=0] = s.split(":").map(Number);
-  if ([h,m,s2].some(Number.isNaN)) return 0;
-  return h*3600 + m*60 + s2;
+  const [h,m,ss] = s.split(":").map(Number);
+  if ([h,m,ss].some(n => Number.isNaN(n))) return 0;
+  return h*3600 + m*60 + ss;
 }
 function secondsToHMS(sec){
   const h = Math.floor(sec/3600);
@@ -204,7 +221,7 @@ function secondsToHMS(sec){
 function calcPace(distanceKm, timeStr){
   const secs = timeToSeconds(timeStr);
   if (!distanceKm || distanceKm <= 0 || secs <= 0) return "-";
-  const pace = secs / distanceKm; // seconds/km
+  const pace = secs / distanceKm; // seconds per km
   const m = Math.floor(pace/60);
   const s = Math.round(pace % 60);
   return `${m}:${pad2(s)}`;
@@ -220,73 +237,38 @@ function formatDate(dateStr) {
   return dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
 }
 
-/* ===== Time Modal (rolling selector) ===== */
-function buildWheel(el, max){
-  // add top/bottom spacers so center aligns nicely
-  const spacer = document.createElement("div");
-  spacer.className = "item";
-  spacer.style.visibility = "hidden";
-  spacer.style.height = "70px";
-  el.appendChild(spacer.cloneNode());
-
-  for (let i=0;i<=max;i++){
-    const d = document.createElement("div");
-    d.className = "item";
-    d.textContent = pad2(i);
-    el.appendChild(d);
+/* ===== Time Picker ===== */
+function buildTimeOptions(){
+  tpHours.innerHTML = ""; tpMinutes.innerHTML = ""; tpSeconds.innerHTML = "";
+  for (let h=0; h<=23; h++){
+    const o = document.createElement("option"); o.value = pad2(h); o.textContent = pad2(h); tpHours.appendChild(o);
   }
-
-  el.appendChild(spacer.cloneNode());
+  for (let m=0; m<=59; m++){
+    const o1 = document.createElement("option"); o1.value = pad2(m); o1.textContent = pad2(m); tpMinutes.appendChild(o1);
+    const o2 = document.createElement("option"); o2.value = pad2(m); o2.textContent = pad2(m); tpSeconds.appendChild(o2);
+  }
 }
-
-function openTimeModal(initial="00:00:00"){
-  // lazy build once
-  if (!wheelH.dataset.built){
-    buildWheel(wheelH, 23);
-    buildWheel(wheelM, 59);
-    buildWheel(wheelS, 59);
-    wheelH.dataset.built = wheelM.dataset.built = wheelS.dataset.built = "1";
-  }
-
-  const parts = normalizeTimeStr(initial || "00:00:00").split(":").map(n=>parseInt(n||"0",10));
-  const [h=0,m=0,s=0] = parts;
-
-  // scroll so selected numbers are centered under the mask
-  const itemH = 40; // must match CSS .item height
-  const offset = 70; // mask top offset in CSS
-  wheelH.scrollTop = (h * itemH);
-  wheelM.scrollTop = (m * itemH);
-  wheelS.scrollTop = (s * itemH);
-
-  timeModal.style.display = "flex";
+function openPicker(){
+  // set current values
+  const [h,m,s] = normalizeTimeStr(timeHidden.value || "00:25:00").split(":");
+  tpHours.value = h; tpMinutes.value = m; tpSeconds.value = s;
+  timeModal.classList.add("show");
   timeModal.setAttribute("aria-hidden","false");
 }
-
-function closeTimeModal(){
-  timeModal.style.display = "none";
+function closePicker(){
+  timeModal.classList.remove("show");
   timeModal.setAttribute("aria-hidden","true");
 }
-
-function getWheelValue(el, max){
-  // round to nearest item
-  const itemH = 40;
-  let idx = Math.round(el.scrollTop / itemH);
-  if (idx < 0) idx = 0;
-  if (idx > max) idx = max;
-  return idx;
-}
-
-openTimePickerBtn.addEventListener("click", () => openTimeModal(timeInput.value));
-closeTimePickerBtn.addEventListener("click", closeTimeModal);
-timeModal.addEventListener("click", (e)=>{ if (e.target === timeModal) closeTimeModal(); });
-
-setTimeBtn.addEventListener("click", () => {
-  const h = getWheelValue(wheelH, 23);
-  const m = getWheelValue(wheelM, 59);
-  const s = getWheelValue(wheelS, 59);
-  timeInput.value = `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
-  closeTimeModal();
+openTimePicker.addEventListener("click", openPicker);
+tpCancel.addEventListener("click", closePicker);
+timeModal.addEventListener("click", (e)=>{ if (e.target === timeModal) closePicker(); });
+tpSet.addEventListener("click", ()=>{
+  const value = `${tpHours.value}:${tpMinutes.value}:${tpSeconds.value}`;
+  timeHidden.value = value;
+  timeDisplay.textContent = value;
+  closePicker();
 });
+buildTimeOptions();
 
 /* ===== Data Fetch ===== */
 async function fetchActivities(){
@@ -379,7 +361,7 @@ runForm.addEventListener("submit", async (e) => {
     date: document.getElementById("date").value,
     name: document.getElementById("name").value.trim(),
     distance: document.getElementById("distance").value,
-    time: normalizeTimeStr(timeInput.value) // already HH:MM:SS from picker
+    time: normalizeTimeStr(timeHidden.value) // already HH:MM:SS from picker
   };
 
   if (!data.date || !data.name || !data.distance || !data.time) {
@@ -405,6 +387,8 @@ runForm.addEventListener("submit", async (e) => {
     }
 
     runForm.reset();
+    // reset default time to something sensible
+    timeHidden.value = "00:25:00"; timeDisplay.textContent = "00:25:00";
     toast("Run added");
     await fetchActivities();
   } catch (err) {
