@@ -38,10 +38,12 @@
   .display-chip code { font-weight:700; }
   .hide { display:none; }
 
-  /* Badge chips */
+  /* Badge & PB chips */
   .badges { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
   .badge  { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; background:#fafafa; font-size:12px; white-space:nowrap; }
   .badge i { font-style: normal; }
+  .pbs { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .pb-chip { display:inline-flex; gap:6px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; background:#eef7ff; font-size:12px; white-space:nowrap; }
 
   /* Collapsible sections */
   details.card { padding: 0; }
@@ -136,7 +138,15 @@
     <div class="content">
       <div class="table-wrap">
         <table aria-live="polite">
-          <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badges</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Total Distance (km)</th>
+              <th>Total Time</th>
+              <th>Badges</th>
+              <th>PBs</th>
+            </tr>
+          </thead>
           <tbody id="leaderboardTable"></tbody>
         </table>
       </div>
@@ -296,8 +306,30 @@ enableHours.addEventListener("change", ()=> setHoursUI(enableHours.checked));
 buildTimeOptions(); setHoursUI(false);
 
 /* ===== State & data cache for export ===== */
-let _allActivities = [];     // last fetched activities (all)
+let _allActivities = [];      // last fetched activities (all)
 let _filteredActivities = []; // last rendered filtered list
+
+/* ===== PB specs (with tolerance) ===== */
+const PB_SPECS = [
+  { label: "5K",   target: 5.0,   tol: 0.25 },
+  { label: "10K",  target: 10.0,  tol: 0.25 },
+  { label: "Half", target: 21.1,  tol: 0.25 },
+  { label: "Marathon", target: 42.2, tol: 0.25 }
+];
+
+/* Find PBs for one runner given their runs */
+function computePBsForRunner(runs){
+  // runs: [{date, distance, time, secs}]
+  const pbs = [];
+  PB_SPECS.forEach(spec=>{
+    const candidates = runs.filter(r => Math.abs(r.distance - spec.target) <= spec.tol && r.secs > 0);
+    if (candidates.length){
+      const best = candidates.reduce((a,b)=> a.secs <= b.secs ? a : b);
+      pbs.push({ label: spec.label, time: secondsToHMS(best.secs), date: best.date, distance: best.distance.toFixed(2) });
+    }
+  });
+  return pbs;
+}
 
 /* ===== Data Fetch ===== */
 async function fetchActivities(){
@@ -324,10 +356,10 @@ async function fetchActivities(){
 
     // Update counts + total distance
     activitiesCountEl.textContent = filtered.length ? `(${filtered.length})` : "";
-    const totalKm = filtered.reduce((sum,r)=> sum + (parseFloat(String(r.distance).replace(",","."))||0), 0);
+    const totalKm = filtered.reduce((sum,r)=> sum + (parseFloat(String(r.distance).replace(",", "."))||0), 0);
     activitiesTotalEl.textContent = filtered.length ? `${totalKm.toFixed(2)} km` : "";
 
-    // Activities
+    // Activities table
     activitiesTable.innerHTML = "";
     if (!filtered.length){
       activitiesTable.innerHTML = "<tr><td colspan='5' class='muted'>No runs yet</td></tr>";
@@ -343,35 +375,43 @@ async function fetchActivities(){
       });
     }
 
-    // Leaderboard aggregation
-    const summary = {};
+    // Leaderboard aggregation + PBs
+    const perRunner = {}; // name -> { dist, secs, runs:[] }
     activities.forEach(r=>{
       const name = r.name || "";
       const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
       const secs = timeToSeconds(r.time);
-      if (!summary[name]) summary[name] = { dist:0, secs:0 };
-      summary[name].dist += dist;
-      summary[name].secs += secs;
+      if (!perRunner[name]) perRunner[name] = { dist:0, secs:0, runs:[] };
+      perRunner[name].dist += dist;
+      perRunner[name].secs += secs;
+      perRunner[name].runs.push({ date: formatDate(r.date), distance: dist, time: normalizeTimeStr(r.time||""), secs });
     });
 
-    // Leaderboard render with chips
-    const sorted = Object.entries(summary).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
+    const sorted = Object.entries(perRunner).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
     leaderboardTable.innerHTML = "";
     leaderboardCountEl.textContent = sorted.length ? `(${sorted.length})` : "";
+
     if (!sorted.length){
-      leaderboardTable.innerHTML = "<tr><td colspan='4' class='muted'>No runners yet</td></tr>";
+      leaderboardTable.innerHTML = "<tr><td colspan='5' class='muted'>No runners yet</td></tr>";
     } else {
       sorted.forEach(([name, vals])=>{
         const badgesArr = getBadges(vals.dist);
         const badgesHtml = badgesArr.length
           ? `<div class="badges">${badgesArr.map(b => `<span class="badge"><i>${b.split(' ')[0]}</i><span>${b.replace(/^[^ ]+ /,'')}</span></span>`).join("")}</div>`
           : "";
+
+        const pbs = computePBsForRunner(vals.runs);
+        const pbsHtml = pbs.length
+          ? `<div class="pbs">${pbs.map(pb => `<span class="pb-chip" title="${pb.label} on ${pb.date} (${pb.distance} km)">${pb.label} ${pb.time}</span>`).join("")}</div>`
+          : "";
+
         const tr=document.createElement("tr");
         tr.innerHTML = `
           <td>${name}</td>
           <td>${vals.dist.toFixed(2)}</td>
           <td>${secondsToHMS(vals.secs)}</td>
           <td>${badgesHtml}</td>
+          <td>${pbsHtml}</td>
         `;
         leaderboardTable.appendChild(tr);
       });
@@ -459,7 +499,7 @@ runForm.addEventListener("submit", async (e)=>{
     localStorage.setItem(key, det.open ? "1" : "0");
   });
 })("secActivities","rt.activities.open");
-(function(){ /* separate key for leaderboard */
+(function(){
   const det = document.getElementById("secLeaderboard");
   const KEY = "rt.leaderboard.open";
   const saved = localStorage.getItem(KEY);
@@ -478,6 +518,9 @@ collapseAllBtn.addEventListener("click", ()=>{ secActivities.open = false; secLe
 
 /* ===== Initial Load ===== */
 fetchActivities();
+
+/* ===== Time picker helpers (placed after DOM used) ===== */
+function setHoursUI(on){ [labelH,colonH].forEach(el=>el.classList.toggle("hide",!on)); if(!on) tpHours.value="00"; }
 </script>
 </body>
 </html>
