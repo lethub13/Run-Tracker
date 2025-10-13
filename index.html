@@ -43,7 +43,7 @@
   .badge  { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; background:#fafafa; font-size:12px; white-space:nowrap; }
   .badge i { font-style: normal; }
 
-  /* Collapsible Past Activities */
+  /* Collapsible sections */
   details.card { padding: 0; }
   details.card > .content { padding: 0 16px 16px 16px; }
   .summary-row {
@@ -62,7 +62,10 @@
   .chev { transition: transform .2s ease; }
   details[open] .chev { transform: rotate(0deg); }
   details:not([open]) .chev { transform: rotate(-90deg); }
-  #activitiesCount { font-weight: 400; color: var(--muted); }
+  .count { font-weight: 400; color: var(--muted); margin-left: 6px; }
+
+  /* Tiny controls row */
+  .controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
 </style>
 </head>
 <body>
@@ -93,23 +96,26 @@
     </form>
   </div>
 
-  <!-- Filters -->
+  <!-- Filters + global controls -->
   <div class="card">
     <div class="row">
       <label for="filterSelect">Filter by Name:
         <select id="filterSelect"><option value="">-- All Names --</option></select>
       </label>
-      <button id="refreshBtn" type="button" style="max-width:160px">Refresh</button>
+      <div class="controls" style="flex:1; justify-content:flex-end;">
+        <button id="exportCsvBtn" type="button" class="btn-secondary">Export CSV</button>
+        <button id="expandAllBtn" type="button" class="btn-secondary">Expand all</button>
+        <button id="collapseAllBtn" type="button" class="btn-secondary">Collapse all</button>
+        <button id="refreshBtn" type="button" class="btn-secondary">Refresh</button>
+      </div>
     </div>
   </div>
 
   <!-- Past Activities (collapsible) -->
   <details id="secActivities" class="card" open>
     <summary class="summary-row">
-      <span>Past Activities <span id="activitiesCount"></span></span>
-      <span class="right">
-        <span class="chev" aria-hidden="true">▾</span>
-      </span>
+      <span>Past Activities <span id="activitiesCount" class="count"></span></span>
+      <span class="right"><span id="activitiesTotal" class="muted"></span><span class="chev" aria-hidden="true">▾</span></span>
     </summary>
     <div class="content">
       <div class="table-wrap">
@@ -121,16 +127,21 @@
     </div>
   </details>
 
-  <!-- Leaderboard -->
-  <div class="card">
-    <h2>Leaderboard</h2>
-    <div class="table-wrap">
-      <table aria-live="polite">
-        <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badges</th></tr></thead>
-        <tbody id="leaderboardTable"></tbody>
-      </table>
+  <!-- Leaderboard (collapsible) -->
+  <details id="secLeaderboard" class="card" open>
+    <summary class="summary-row">
+      <span>Leaderboard <span id="leaderboardCount" class="count"></span></span>
+      <span class="right"><span class="chev" aria-hidden="true">▾</span></span>
+    </summary>
+    <div class="content">
+      <div class="table-wrap">
+        <table aria-live="polite">
+          <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badges</th></tr></thead>
+          <tbody id="leaderboardTable"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  </details>
 
   <!-- Support -->
   <div class="card" style="text-align:center">
@@ -179,9 +190,16 @@ const leaderboardTable = document.getElementById("leaderboardTable");
 const filterSelect = document.getElementById("filterSelect");
 const statusEl = document.getElementById("status");
 const refreshBtn = document.getElementById("refreshBtn");
+const exportCsvBtn = document.getElementById("exportCsvBtn");
+const expandAllBtn = document.getElementById("expandAllBtn");
+const collapseAllBtn = document.getElementById("collapseAllBtn");
 const toastEl = document.getElementById("toast");
 const submitBtn = document.getElementById("submitBtn");
 const activitiesCountEl = document.getElementById("activitiesCount");
+const activitiesTotalEl = document.getElementById("activitiesTotal");
+const leaderboardCountEl = document.getElementById("leaderboardCount");
+const secActivities = document.getElementById("secActivities");
+const secLeaderboard = document.getElementById("secLeaderboard");
 
 /* Time widgets */
 const timeHidden = document.getElementById("time");
@@ -228,7 +246,7 @@ function calcPace(distanceKm, timeStr){
 }
 function formatDate(dateStr){ return dateStr && dateStr.includes("T") ? dateStr.split("T")[0] : (dateStr||""); }
 
-/* ==== Badge logic: return ALL earned badges as array (progress sash) ==== */
+/* ==== Badge logic: ALL earned badges (progress sash) ==== */
 function getBadges(km) {
   const badges = [];
   // Event-style early badges
@@ -263,7 +281,7 @@ function openPicker(){
   timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false");
 }
 function closePicker(){ timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true"); }
-openTimePicker.addEventListener("click", openPicker);
+document.getElementById("openTimePicker").addEventListener("click", openPicker);
 tpCancel.addEventListener("click", closePicker);
 timeModal.addEventListener("click", e=>{ if (e.target===timeModal) closePicker(); });
 tpSet.addEventListener("click", ()=>{
@@ -277,6 +295,10 @@ tpSet.addEventListener("click", ()=>{
 enableHours.addEventListener("change", ()=> setHoursUI(enableHours.checked));
 buildTimeOptions(); setHoursUI(false);
 
+/* ===== State & data cache for export ===== */
+let _allActivities = [];     // last fetched activities (all)
+let _filteredActivities = []; // last rendered filtered list
+
 /* ===== Data Fetch ===== */
 async function fetchActivities(){
   statusEl.textContent="Loading…";
@@ -284,8 +306,9 @@ async function fetchActivities(){
     const res = await fetch(scriptUrl,{ cache: "no-store" });
     const activities = await res.json();
 
-    // (Optional) always show newest first in the app
+    // Always show newest first in the app
     activities.sort((a,b)=> new Date(b.date) - new Date(a.date));
+    _allActivities = activities;
 
     // Build filter dropdown
     const prev = filterSelect.value;
@@ -297,9 +320,12 @@ async function fetchActivities(){
 
     const filter = filterSelect.value.trim().toLowerCase();
     const filtered = filter ? activities.filter(r => (r.name||"").toLowerCase()===filter) : activities;
+    _filteredActivities = filtered;
 
-    // Update count in summary
+    // Update counts + total distance
     activitiesCountEl.textContent = filtered.length ? `(${filtered.length})` : "";
+    const totalKm = filtered.reduce((sum,r)=> sum + (parseFloat(String(r.distance).replace(",","."))||0), 0);
+    activitiesTotalEl.textContent = filtered.length ? `${totalKm.toFixed(2)} km` : "";
 
     // Activities
     activitiesTable.innerHTML = "";
@@ -331,6 +357,7 @@ async function fetchActivities(){
     // Leaderboard render with chips
     const sorted = Object.entries(summary).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
     leaderboardTable.innerHTML = "";
+    leaderboardCountEl.textContent = sorted.length ? `(${sorted.length})` : "";
     if (!sorted.length){
       leaderboardTable.innerHTML = "<tr><td colspan='4' class='muted'>No runners yet</td></tr>";
     } else {
@@ -356,6 +383,33 @@ async function fetchActivities(){
   } finally {
     statusEl.textContent="";
   }
+}
+
+/* ===== Export CSV of current filtered rows ===== */
+function exportFilteredToCSV(){
+  const rows = _filteredActivities;
+  if (!rows.length){ toast("Nothing to export"); return; }
+  const header = ["Date","Name","Distance (km)","Time","Pace"];
+  const lines = [header.join(",")];
+  rows.forEach(r=>{
+    const date = formatDate(r.date);
+    const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
+    const time = normalizeTimeStr(r.time || "");
+    const pace = r.pace || calcPace(dist, time);
+    const safe = [date, r.name||"", dist.toFixed(2), time, pace].map(v=>{
+      const s=String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+    });
+    lines.push(safe.join(","));
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const name = filterSelect.value ? `runs_${filterSelect.value}.csv` : "runs_all.csv";
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }
 
 /* ===== Submit Handler ===== */
@@ -396,10 +450,18 @@ runForm.addEventListener("submit", async (e)=>{
   }
 });
 
-/* ===== Persist Past Activities open/closed ===== */
-(function persistActivitiesOpenState(){
-  const det = document.getElementById("secActivities");
-  const KEY = "rt.activities.open";
+/* ===== Persist open/closed states ===== */
+(function persistOpenState(id, key){
+  const det = document.getElementById(id);
+  const saved = localStorage.getItem(key);
+  if (saved !== null) det.open = saved === "1";
+  det.addEventListener("toggle", () => {
+    localStorage.setItem(key, det.open ? "1" : "0");
+  });
+})("secActivities","rt.activities.open");
+(function(){ /* separate key for leaderboard */
+  const det = document.getElementById("secLeaderboard");
+  const KEY = "rt.leaderboard.open";
   const saved = localStorage.getItem(KEY);
   if (saved !== null) det.open = saved === "1";
   det.addEventListener("toggle", () => {
@@ -410,6 +472,9 @@ runForm.addEventListener("submit", async (e)=>{
 /* ===== Interactions ===== */
 filterSelect.addEventListener("change", fetchActivities);
 refreshBtn.addEventListener("click", fetchActivities);
+exportCsvBtn.addEventListener("click", exportFilteredToCSV);
+expandAllBtn.addEventListener("click", ()=>{ secActivities.open = true; secLeaderboard.open = true; });
+collapseAllBtn.addEventListener("click", ()=>{ secActivities.open = false; secLeaderboard.open = false; });
 
 /* ===== Initial Load ===== */
 fetchActivities();
