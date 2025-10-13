@@ -42,6 +42,27 @@
   .badges { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
   .badge  { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; background:#fafafa; font-size:12px; white-space:nowrap; }
   .badge i { font-style: normal; }
+
+  /* Collapsible Past Activities */
+  details.card { padding: 0; }
+  details.card > .content { padding: 0 16px 16px 16px; }
+  .summary-row {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+    user-select: none;
+  }
+  .summary-row .right { display:flex; align-items:center; gap:8px; }
+  .chev { transition: transform .2s ease; }
+  details[open] .chev { transform: rotate(0deg); }
+  details:not([open]) .chev { transform: rotate(-90deg); }
+  #activitiesCount { font-weight: 400; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -72,19 +93,25 @@
     </form>
   </div>
 
-    <!-- Filters -->
-    <div class="card">
-      <div class="row">
-        <label for="filterSelect">Filter by Name:
-          <select id="filterSelect"><option value="">-- All Names --</option></select>
-        </label>
-        <button id="refreshBtn" type="button" style="max-width:160px">Refresh</button>
-      </div>
+  <!-- Filters -->
+  <div class="card">
+    <div class="row">
+      <label for="filterSelect">Filter by Name:
+        <select id="filterSelect"><option value="">-- All Names --</option></select>
+      </label>
+      <button id="refreshBtn" type="button" style="max-width:160px">Refresh</button>
     </div>
+  </div>
 
-    <!-- Past Activities -->
-    <div class="card">
-      <h2>Past Activities</h2>
+  <!-- Past Activities (collapsible) -->
+  <details id="secActivities" class="card" open>
+    <summary class="summary-row">
+      <span>Past Activities <span id="activitiesCount"></span></span>
+      <span class="right">
+        <span class="chev" aria-hidden="true">▾</span>
+      </span>
+    </summary>
+    <div class="content">
       <div class="table-wrap">
         <table aria-live="polite">
           <thead><tr><th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th></tr></thead>
@@ -92,26 +119,27 @@
         </table>
       </div>
     </div>
+  </details>
 
-    <!-- Leaderboard -->
-    <div class="card">
-      <h2>Leaderboard</h2>
-      <div class="table-wrap">
-        <table aria-live="polite">
-          <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badges</th></tr></thead>
-          <tbody id="leaderboardTable"></tbody>
-        </table>
-      </div>
+  <!-- Leaderboard -->
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <div class="table-wrap">
+      <table aria-live="polite">
+        <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badges</th></tr></thead>
+        <tbody id="leaderboardTable"></tbody>
+      </table>
     </div>
+  </div>
 
-    <!-- Support -->
-    <div class="card" style="text-align:center">
-      <h3>Support this App</h3>
-      <form action="https://www.paypal.com/donate" method="post" target="_top">
-        <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
-        <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="Donate with PayPal button" style="max-width:100%;height:auto;" />
-      </form>
-    </div>
+  <!-- Support -->
+  <div class="card" style="text-align:center">
+    <h3>Support this App</h3>
+    <form action="https://www.paypal.com/donate" method="post" target="_top">
+      <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
+      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="Donate with PayPal button" style="max-width:100%;height:auto;" />
+    </form>
+  </div>
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -153,6 +181,7 @@ const statusEl = document.getElementById("status");
 const refreshBtn = document.getElementById("refreshBtn");
 const toastEl = document.getElementById("toast");
 const submitBtn = document.getElementById("submitBtn");
+const activitiesCountEl = document.getElementById("activitiesCount");
 
 /* Time widgets */
 const timeHidden = document.getElementById("time");
@@ -255,6 +284,9 @@ async function fetchActivities(){
     const res = await fetch(scriptUrl,{ cache: "no-store" });
     const activities = await res.json();
 
+    // (Optional) always show newest first in the app
+    activities.sort((a,b)=> new Date(b.date) - new Date(a.date));
+
     // Build filter dropdown
     const prev = filterSelect.value;
     filterSelect.innerHTML = '<option value="">-- All Names --</option>';
@@ -265,6 +297,9 @@ async function fetchActivities(){
 
     const filter = filterSelect.value.trim().toLowerCase();
     const filtered = filter ? activities.filter(r => (r.name||"").toLowerCase()===filter) : activities;
+
+    // Update count in summary
+    activitiesCountEl.textContent = filtered.length ? `(${filtered.length})` : "";
 
     // Activities
     activitiesTable.innerHTML = "";
@@ -360,6 +395,17 @@ runForm.addEventListener("submit", async (e)=>{
     toast("Network error while saving");
   }
 });
+
+/* ===== Persist Past Activities open/closed ===== */
+(function persistActivitiesOpenState(){
+  const det = document.getElementById("secActivities");
+  const KEY = "rt.activities.open";
+  const saved = localStorage.getItem(KEY);
+  if (saved !== null) det.open = saved === "1";
+  det.addEventListener("toggle", () => {
+    localStorage.setItem(KEY, det.open ? "1" : "0");
+  });
+})();
 
 /* ===== Interactions ===== */
 filterSelect.addEventListener("change", fetchActivities);
