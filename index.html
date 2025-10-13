@@ -13,31 +13,28 @@
   .card { background: var(--card); border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.12); padding: 16px; }
   form label { display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 8px; margin: 10px 0; }
   input, select, button { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; }
-  input:focus, select:focus, button:focus { outline: none; border-color: var(--brand); }
-  button { border: 1px solid transparent; background: var(--brand); color: #fff; cursor: pointer; }
-  button:disabled { opacity: .6; cursor: not-allowed; }
-  button:hover:not(:disabled) { background: var(--brand-d); }
-  .btn-secondary { background: #eee; color: #111; border-color: #ddd; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .row > * { flex: 1 1 220px; }
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-  th { background: #eee; }
-  .muted { color: var(--muted); }
-  .toast { position: fixed; right: 16px; bottom: 16px; background: #222; color: #fff; padding: 10px 14px; border-radius: 8px; opacity: 0; transform: translateY(8px); transition: .25s; }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: center; justify-content: center; z-index: 50; }
-  .modal-backdrop.show { display: flex; }
-  .modal { background: #fff; width: min(520px, 92vw); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); padding: 16px; }
-  .picker-grid { display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; }
-  .picker-grid select { font-size: 18px; padding: 8px 10px; height: 44px; }
-  .colon { font-size: 20px; font-weight: 700; }
-  .modal-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; }
-  .left { display: flex; align-items: center; gap: 8px; }
-  .display-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; background: #fafafa; }
-  .display-chip code { font-weight: 700; }
-  .hide { display: none; }
+  button { background: var(--brand); color: #fff; border: 1px solid transparent; cursor: pointer; }
+  button:hover { background: var(--brand-d); }
+  button:disabled { opacity:.6; cursor:not-allowed; }
+  .btn-secondary { background:#eee; color:#111; border-color:#ddd; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .row>* { flex:1 1 220px; }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; }
+  th,td { border:1px solid #ddd; padding:8px; text-align:center; }
+  th { background:#eee; }
+  .muted { color:var(--muted); }
+  .toast { position:fixed; right:16px; bottom:16px; background:#222; color:#fff; padding:10px 14px; border-radius:8px; opacity:0; transform:translateY(8px); transition:.25s; }
+  .toast.show { opacity:1; transform:translateY(0); }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { background:#fff; width:min(520px,92vw); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); padding:16px; }
+  .picker-grid { display:grid; grid-template-columns:auto 1fr auto 1fr auto 1fr; gap:8px; align-items:center; }
+  .picker-grid select { font-size:18px; padding:8px 10px; height:44px; }
+  .colon { font-size:20px; font-weight:700; }
+  .display-chip { display:inline-flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:6px; padding:8px 10px; background:#fafafa; }
+  .display-chip code { font-weight:700; }
+  .hide { display:none; }
 </style>
 </head>
 <body>
@@ -45,19 +42,13 @@
 
 <div class="wrap">
   <div class="card">
-    <form id="runForm" aria-label="Add new run">
+    <form id="runForm">
       <div class="row">
-        <label>Date:
-          <input type="date" id="date" required />
-        </label>
-        <label>Name:
-          <input type="text" id="name" placeholder="Your name" required />
-        </label>
+        <label>Date: <input type="date" id="date" required /></label>
+        <label>Name: <input type="text" id="name" placeholder="Your name" required /></label>
       </div>
       <div class="row">
-        <label>Distance (km):
-          <input type="number" id="distance" step="0.01" min="0.01" placeholder="e.g. 5" required />
-        </label>
+        <label>Distance (km): <input type="number" id="distance" step="0.01" min="0.01" placeholder="e.g. 5" required /></label>
         <label>Time (duration):
           <span class="display-chip">
             <code id="timeDisplay">--:--:--</code>
@@ -66,10 +57,7 @@
           <input type="hidden" id="time" value="" />
         </label>
       </div>
-      <div class="row">
-        <button id="submitBtn" type="submit" disabled>Add Run</button>
-        <span class="muted" id="status" aria-live="polite"></span>
-      </div>
+      <div class="row"><button id="submitBtn" type="submit" disabled>Add Run</button><span id="status" class="muted"></span></div>
     </form>
   </div>
 
@@ -85,7 +73,7 @@
   <div class="card">
     <h2>Past Activities</h2>
     <div class="table-wrap">
-      <table aria-live="polite">
+      <table>
         <thead><tr><th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th></tr></thead>
         <tbody id="activitiesTable"></tbody>
       </table>
@@ -95,7 +83,7 @@
   <div class="card">
     <h2>Leaderboard</h2>
     <div class="table-wrap">
-      <table aria-live="polite">
+      <table>
         <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badge</th></tr></thead>
         <tbody id="leaderboardTable"></tbody>
       </table>
@@ -103,34 +91,22 @@
   </div>
 </div>
 
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="toast" class="toast"></div>
 
-<!-- Time picker modal -->
+<!-- Time picker -->
 <div id="timeModal" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true">
     <h3>Select Duration</h3>
     <div class="picker-grid">
-      <label class="hide" id="labelH">H
-        <select id="tpHours" aria-label="Hours"></select>
-      </label>
+      <label class="hide" id="labelH">H <select id="tpHours" aria-label="Hours"></select></label>
       <div class="colon hide" id="colonH">:</div>
-      <label>M
-        <select id="tpMinutes" aria-label="Minutes"></select>
-      </label>
+      <label>M <select id="tpMinutes" aria-label="Minutes"></select></label>
       <div class="colon">:</div>
-      <label>S
-        <select id="tpSeconds" aria-label="Seconds"></select>
-      </label>
+      <label>S <select id="tpSeconds" aria-label="Seconds"></select></label>
     </div>
-    <div class="modal-actions">
-      <div class="left">
-        <input type="checkbox" id="enableHours" />
-        <label for="enableHours">Add hours</label>
-      </div>
-      <div>
-        <button type="button" id="tpCancel" class="btn-secondary">Cancel</button>
-        <button type="button" id="tpSet">Set</button>
-      </div>
+    <div style="display:flex;justify-content:space-between;margin-top:12px;gap:10px">
+      <div><input type="checkbox" id="enableHours" /> <label for="enableHours">Add hours</label></div>
+      <div><button type="button" id="tpCancel" class="btn-secondary">Cancel</button> <button type="button" id="tpSet">Set</button></div>
     </div>
   </div>
 </div>
@@ -143,16 +119,16 @@ const runForm = document.getElementById("runForm");
 const activitiesTable = document.getElementById("activitiesTable");
 const leaderboardTable = document.getElementById("leaderboardTable");
 const filterSelect = document.getElementById("filterSelect");
-const statusEl = document.getElementById("status");
 const refreshBtn = document.getElementById("refreshBtn");
-const toastEl = document.getElementById("toast");
+const statusEl = document.getElementById("status");
 const submitBtn = document.getElementById("submitBtn");
+const toastEl = document.getElementById("toast");
 
 /* time widgets */
 const timeHidden = document.getElementById("time");
 const timeDisplay = document.getElementById("timeDisplay");
-const openTimePicker = document.getElementById("openTimePicker");
 const timeModal = document.getElementById("timeModal");
+const openTimePicker = document.getElementById("openTimePicker");
 const tpHours = document.getElementById("tpHours");
 const tpMinutes = document.getElementById("tpMinutes");
 const tpSeconds = document.getElementById("tpSeconds");
@@ -164,7 +140,7 @@ const colonH = document.getElementById("colonH");
 
 /* utils */
 function toast(m){ toastEl.textContent=m; toastEl.classList.add("show"); setTimeout(()=>toastEl.classList.remove("show"),2000); }
-const pad2 = n => String(n).padStart(2,"0");
+const pad2=n=>String(n).padStart(2,"0");
 function normalizeTimeStr(t){
   if(!t) return "";
   const s=String(t).trim();
@@ -173,66 +149,40 @@ function normalizeTimeStr(t){
   if (/^\d{1,2}:[0-5]\d:[0-5]\d$/.test(s)) { const [h,m,ss]=s.split(":"); return `${pad2(h)}:${m}:${ss}`; }
   return s;
 }
-function timeToSeconds(t){
-  const s = normalizeTimeStr(t);
-  if (!s) return 0;
-  const [h,m,ss]=s.split(":").map(Number);
-  if ([h,m,ss].some(isNaN)) return 0;
-  return h*3600+m*60+ss;
-}
+function timeToSeconds(t){ const s=normalizeTimeStr(t); if(!s) return 0; const [h,m,ss]=s.split(":").map(Number); if([h,m,ss].some(isNaN)) return 0; return h*3600+m*60+ss; }
 function secondsToHMS(sec){ const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.floor(sec%60); return [h,m,s].map(pad2).join(":"); }
-function calcPace(km, t){ const s=timeToSeconds(t); if (!km || s<=0) return "-"; const spk=s/km; const m=Math.floor(spk/60), ss=Math.round(spk%60); return `${m}:${pad2(ss)}`; }
+function calcPace(km,t){ const s=timeToSeconds(t); if(!km||s<=0) return "-"; const spk=s/km; const m=Math.floor(spk/60), ss=Math.round(spk%60); return `${m}:${pad2(ss)}`; }
 function getBadge(km){ if (km>=42.2) return "🏅 Marathon"; if (km>=21.1) return "🥈 Half"; if (km>=10) return "🥉 10K"; return ""; }
 function formatDate(d){ return d && d.includes("T") ? d.split("T")[0] : (d||""); }
 
 /* picker */
-function buildTimeOptions(){
-  tpHours.innerHTML=""; tpMinutes.innerHTML=""; tpSeconds.innerHTML="";
-  for(let h=0; h<=23; h++){ const o=document.createElement("option"); o.value=pad2(h); o.textContent=pad2(h); tpHours.appendChild(o); }
-  for(let m=0; m<=59; m++){
-    const o1=document.createElement("option"); o1.value=pad2(m); o1.textContent=pad2(m); tpMinutes.appendChild(o1);
-    const o2=document.createElement("option"); o2.value=pad2(m); o2.textContent=pad2(m); tpSeconds.appendChild(o2);
-  }
+function buildTimeOptions(){ tpHours.innerHTML=""; tpMinutes.innerHTML=""; tpSeconds.innerHTML="";
+  for(let h=0;h<=23;h++){ const o=document.createElement("option"); o.value=pad2(h); o.textContent=pad2(h); tpHours.appendChild(o); }
+  for(let m=0;m<=59;m++){ const o1=document.createElement("option"); o1.value=pad2(m); o1.textContent=pad2(m); tpMinutes.appendChild(o1); const o2=document.createElement("option"); o2.value=pad2(m); o2.textContent=pad2(m); tpSeconds.appendChild(o2); }
 }
 function setHoursUI(on){ [labelH,colonH].forEach(el=>el.classList.toggle("hide",!on)); if(!on) tpHours.value="00"; }
-function openPicker(){
-  const base = timeHidden.value || "00:00:00";
-  const [h,m,s]=normalizeTimeStr(base).split(":");
-  tpHours.value=h; tpMinutes.value=m; tpSeconds.value=s;
-  timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false");
-}
+function openPicker(){ const base=timeHidden.value||"00:00:00"; const [h,m,s]=normalizeTimeStr(base).split(":"); tpHours.value=h; tpMinutes.value=m; tpSeconds.value=s; timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false"); }
 function closePicker(){ timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true"); }
 openTimePicker.addEventListener("click", openPicker);
 tpCancel.addEventListener("click", closePicker);
 timeModal.addEventListener("click", e=>{ if(e.target===timeModal) closePicker(); });
-tpSet.addEventListener("click", ()=>{
-  const hours = enableHours.checked ? tpHours.value : "00";
-  const val = `${hours}:${tpMinutes.value}:${tpSeconds.value}`;
-  timeHidden.value = val;
-  timeDisplay.textContent = val;
-  submitBtn.disabled = false; // time chosen
-  closePicker();
-});
+tpSet.addEventListener("click", ()=>{ const hours=enableHours.checked?tpHours.value:"00"; const val=`${hours}:${tpMinutes.value}:${tpSeconds.value}`; timeHidden.value=val; timeDisplay.textContent=val; submitBtn.disabled=false; closePicker(); });
 enableHours.addEventListener("change", ()=> setHoursUI(enableHours.checked));
 buildTimeOptions(); setHoursUI(false);
 
-/* fetch + render */
+/* data fetch */
 async function fetchActivities(){
   statusEl.textContent="Loading…";
   try{
     const res = await fetch(scriptUrl,{ cache:"no-store" });
     const items = await res.json();
 
-    // filter names
     const prev = filterSelect.value;
     filterSelect.innerHTML = '<option value="">-- All Names --</option>';
-    [...new Set(items.map(x=>x.name).filter(Boolean))].sort().forEach(n=>{
-      const o=document.createElement("option"); o.value=n; o.textContent=n; if(n===prev) o.selected=true; filterSelect.appendChild(o);
-    });
+    [...new Set(items.map(x=>x.name).filter(Boolean))].sort().forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n; if(n===prev) o.selected=true; filterSelect.appendChild(o); });
     const f = filterSelect.value.trim().toLowerCase();
     const rows = f ? items.filter(r => (r.name||"").toLowerCase()===f) : items;
 
-    // activities
     activitiesTable.innerHTML="";
     if(!rows.length){ activitiesTable.innerHTML="<tr><td colspan='5' class='muted'>No runs yet</td></tr>"; }
     else rows.forEach(r=>{
@@ -244,19 +194,11 @@ async function fetchActivities(){
       activitiesTable.appendChild(tr);
     });
 
-    // leaderboard
     const agg={};
-    items.forEach(r=>{
-      const n=r.name||""; const d=parseFloat(String(r.distance).replace(',','.'))||0; const s=timeToSeconds(r.time);
-      if(!agg[n]) agg[n]={dist:0,secs:0}; agg[n].dist+=d; agg[n].secs+=s;
-    });
+    items.forEach(r=>{ const n=r.name||""; const d=parseFloat(String(r.distance).replace(',','.'))||0; const s=timeToSeconds(r.time); if(!agg[n]) agg[n]={dist:0,secs:0}; agg[n].dist+=d; agg[n].secs+=s; });
     const sorted = Object.entries(agg).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
     leaderboardTable.innerHTML = sorted.length ? "" : "<tr><td colspan='4' class='muted'>No runners yet</td></tr>";
-    sorted.forEach(([n,v])=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${n}</td><td>${v.dist.toFixed(2)}</td><td>${secondsToHMS(v.secs)}</td><td>${getBadge(v.dist)}</td>`;
-      leaderboardTable.appendChild(tr);
-    });
+    sorted.forEach(([n,v])=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${n}</td><td>${v.dist.toFixed(2)}</td><td>${secondsToHMS(v.secs)}</td><td>${getBadge(v.dist)}</td>`; leaderboardTable.appendChild(tr); });
 
   }catch(e){ console.error(e); toast("Failed to load"); }
   finally{ statusEl.textContent=""; }
@@ -265,14 +207,14 @@ async function fetchActivities(){
 /* submit */
 runForm.addEventListener("submit", async e=>{
   e.preventDefault();
-  const timeVal = normalizeTimeStr(timeHidden.value);
-  if(!timeVal){ toast("Pick a time"); return; }
+  const t = normalizeTimeStr(timeHidden.value);
+  if(!t){ toast("Pick a time"); return; }
 
   const payload = {
     date: document.getElementById("date").value,
     name: document.getElementById("name").value.trim(),
     distance: document.getElementById("distance").value,
-    time: timeVal,
+    time: t,
     hoursEnabled: enableHours.checked === true
   };
 
@@ -281,10 +223,8 @@ runForm.addEventListener("submit", async e=>{
     const json = await resp.json().catch(()=>({}));
     if(!resp.ok || json.ok===false){ console.error("Save error:",json); toast("Could not save"); return; }
 
-    runForm.reset();
-    timeHidden.value=""; timeDisplay.textContent="--:--:--"; submitBtn.disabled=true; setHoursUI(false);
-    toast("Run added");
-    await fetchActivities();
+    runForm.reset(); timeHidden.value=""; timeDisplay.textContent="--:--:--"; submitBtn.disabled=true; setHoursUI(false);
+    toast("Run added"); await fetchActivities();
   }catch(err){ console.error(err); toast("Network error"); }
 });
 
