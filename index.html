@@ -9,7 +9,7 @@
   * { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 20px; }
   h1 { text-align: center; margin-bottom: 16px; }
-  .wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 20px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
   .card { background: var(--card); border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.12); padding: 16px; }
   form label { display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 8px; margin: 10px 0; }
   input, select, button { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; }
@@ -24,11 +24,11 @@
   th,td { border:1px solid #ddd; padding:8px; text-align:center; vertical-align: middle; }
   th { background:#eee; }
   .muted { color:var(--muted); }
-  .toast { position:fixed; right:16px; bottom:16px; background:#222; color:#fff; padding:10px 14px; border-radius:8px; opacity:0; transform:translateY(8px); transition:.25s; }
+  .toast { position:fixed; right:16px; bottom:16px; background:#222; color:#fff; padding:10px 14px; border-radius:8px; opacity:0; transform:translateY(8px); transition:.25s; z-index:1000; }
   .toast.show { opacity:1; transform:translateY(0); }
 
   /* Time picker modal */
-  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:900; }
   .modal-backdrop.show { display:flex; }
   .modal { background:#fff; width:min(520px,92vw); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); padding:16px; }
   .picker-grid { display:grid; grid-template-columns:auto 1fr auto 1fr auto 1fr; gap:8px; align-items:center; }
@@ -49,16 +49,8 @@
   details.card { padding: 0; }
   details.card > .content { padding: 0 16px 16px 16px; }
   .summary-row {
-    list-style: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 14px 16px;
-    cursor: pointer;
-    font-weight: 700;
-    border-bottom: 1px solid #eee;
-    user-select: none;
+    list-style: none; display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 14px 16px; cursor: pointer; font-weight: 700; border-bottom: 1px solid #eee; user-select: none;
   }
   .summary-row .right { display:flex; align-items:center; gap:8px; }
   .chev { transition: transform .2s ease; }
@@ -68,9 +60,24 @@
 
   /* Tiny controls row */
   .controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
+  /* Avatars */
+  .name-cell { display:flex; align-items:center; gap:8px; }
+  .avatar {
+    width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:#fff; flex:0 0 28px;
+  }
+
+  /* Fireworks canvas */
+  #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 1100; }
+  /* Invite modal tweaks */
+  .qr-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .qr-wrap img { width:220px; height:220px; }
+  .qr-link { font-size:12px; color:var(--muted); word-break:break-all; text-align:center; }
 </style>
 </head>
 <body>
+<canvas id="confettiCanvas"></canvas>
 <h1>Run Tracker</h1>
 
 <div class="wrap">
@@ -105,6 +112,7 @@
         <select id="filterSelect"><option value="">-- All Names --</option></select>
       </label>
       <div class="controls" style="flex:1; justify-content:flex-end;">
+        <button id="inviteBtn" type="button" class="btn-secondary">Invite</button>
         <button id="exportCsvBtn" type="button" class="btn-secondary">Export CSV</button>
         <button id="expandAllBtn" type="button" class="btn-secondary">Expand all</button>
         <button id="collapseAllBtn" type="button" class="btn-secondary">Collapse all</button>
@@ -189,6 +197,22 @@
   </div>
 </div>
 
+<!-- Invite modal -->
+<div id="inviteModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Invite people</h3>
+    <div class="qr-wrap">
+      <img id="qrImg" alt="Invite QR" />
+      <div class="qr-link" id="inviteLink"></div>
+      <div style="display:flex; gap:8px;">
+        <button id="copyInviteBtn" class="btn-secondary" type="button">Copy link</button>
+        <button id="closeInviteBtn" class="btn-secondary" type="button">Close</button>
+      </div>
+      <small class="muted">QR includes current name filter if set.</small>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ===== Config (Vercel) ===== */
 const scriptUrl = "/api/proxy";
@@ -203,6 +227,7 @@ const refreshBtn = document.getElementById("refreshBtn");
 const exportCsvBtn = document.getElementById("exportCsvBtn");
 const expandAllBtn = document.getElementById("expandAllBtn");
 const collapseAllBtn = document.getElementById("collapseAllBtn");
+const inviteBtn = document.getElementById("inviteBtn");
 const toastEl = document.getElementById("toast");
 const submitBtn = document.getElementById("submitBtn");
 const activitiesCountEl = document.getElementById("activitiesCount");
@@ -224,6 +249,13 @@ const tpCancel = document.getElementById("tpCancel");
 const enableHours = document.getElementById("enableHours");
 const labelH = document.getElementById("labelH");
 const colonH = document.getElementById("colonH");
+
+/* Invite modal DOM */
+const inviteModal = document.getElementById("inviteModal");
+const qrImg = document.getElementById("qrImg");
+const inviteLinkEl = document.getElementById("inviteLink");
+const copyInviteBtn = document.getElementById("copyInviteBtn");
+const closeInviteBtn = document.getElementById("closeInviteBtn");
 
 /* ===== Utils ===== */
 function toast(m){ toastEl.textContent=m; toastEl.classList.add("show"); setTimeout(()=>toastEl.classList.remove("show"),2000); }
@@ -259,12 +291,10 @@ function formatDate(dateStr){ return dateStr && dateStr.includes("T") ? dateStr.
 /* ==== Badge logic: ALL earned badges (progress sash) ==== */
 function getBadges(km) {
   const badges = [];
-  // Event-style early badges
   if (km >= 5)    badges.push("🏁 5K");
   if (km >= 10)   badges.push("🥉 10K");
   if (km >= 21.1) badges.push("🥈 Half");
   if (km >= 42.2) badges.push("🎖️ Marathon");
-  // Cumulative milestones
   if (km >= 50)  badges.push("🏅 50 km");
   if (km >= 100) badges.push("🥇 100 km");
   if (km >= 150) badges.push("🏆 150 km");
@@ -273,6 +303,41 @@ function getBadges(km) {
   if (km >= 300) badges.push("👑 300+ km");
   return badges;
 }
+
+/* ===== PB specs (with tolerance) ===== */
+const PB_SPECS = [
+  { label: "5K",   target: 5.0,   tol: 0.25 },
+  { label: "10K",  target: 10.0,  tol: 0.25 },
+  { label: "Half", target: 21.1,  tol: 0.25 },
+  { label: "Marathon", target: 42.2, tol: 0.25 }
+];
+function computePBsForRunner(runs){
+  const pbs = [];
+  PB_SPECS.forEach(spec=>{
+    const candidates = runs.filter(r => Math.abs(r.distance - spec.target) <= spec.tol && r.secs > 0);
+    if (candidates.length){
+      const best = candidates.reduce((a,b)=> a.secs <= b.secs ? a : b);
+      pbs.push({ label: spec.label, time: secondsToHMS(best.secs), date: best.date, distance: best.distance.toFixed(2), secs: best.secs });
+    }
+  });
+  return pbs;
+}
+
+/* ===== Avatars ===== */
+const PALETTE = [
+  "#E57373","#F06292","#BA68C8","#9575CD","#7986CB","#64B5F6","#4FC3F7","#4DD0E1",
+  "#4DB6AC","#81C784","#AED581","#DCE775","#FFF176","#FFD54F","#FFB74D","#A1887F",
+  "#90A4AE"
+];
+function hashCode(str){ let h=0; for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; } return Math.abs(h); }
+function colorForName(name){ if(!name) return "#888"; return PALETTE[hashCode(name)%PALETTE.length]; }
+function initials(name){
+  const parts=String(name||"").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length===1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0]+parts[1][0]).toUpperCase();
+}
+function avatarHTML(name){ const bg=colorForName(name), text=initials(name); return `<span class="avatar" style="background:${bg}">${text}</span>`; }
 
 /* ===== Time Picker ===== */
 function buildTimeOptions(){
@@ -291,7 +356,7 @@ function openPicker(){
   timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false");
 }
 function closePicker(){ timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true"); }
-document.getElementById("openTimePicker").addEventListener("click", openPicker);
+openTimePicker.addEventListener("click", openPicker);
 tpCancel.addEventListener("click", closePicker);
 timeModal.addEventListener("click", e=>{ if (e.target===timeModal) closePicker(); });
 tpSet.addEventListener("click", ()=>{
@@ -305,40 +370,60 @@ tpSet.addEventListener("click", ()=>{
 enableHours.addEventListener("change", ()=> setHoursUI(enableHours.checked));
 buildTimeOptions(); setHoursUI(false);
 
-/* ===== State & data cache for export ===== */
-let _allActivities = [];      // last fetched activities (all)
-let _filteredActivities = []; // last rendered filtered list
+/* ===== State & data cache ===== */
+let _allActivities = [];
+let _filteredActivities = [];
+let _perRunner = {};
+let lastSubmittedName = null;     // set after POST to personalize fireworks
 
-/* ===== PB specs (with tolerance) ===== */
-const PB_SPECS = [
-  { label: "5K",   target: 5.0,   tol: 0.25 },
-  { label: "10K",  target: 10.0,  tol: 0.25 },
-  { label: "Half", target: 21.1,  tol: 0.25 },
-  { label: "Marathon", target: 42.2, tol: 0.25 }
-];
-
-/* Find PBs for one runner given their runs */
-function computePBsForRunner(runs){
-  // runs: [{date, distance, time, secs}]
-  const pbs = [];
-  PB_SPECS.forEach(spec=>{
-    const candidates = runs.filter(r => Math.abs(r.distance - spec.target) <= spec.tol && r.secs > 0);
-    if (candidates.length){
-      const best = candidates.reduce((a,b)=> a.secs <= b.secs ? a : b);
-      pbs.push({ label: spec.label, time: secondsToHMS(best.secs), date: best.date, distance: best.distance.toFixed(2) });
-    }
+/* ===== Fireworks (confetti) ===== */
+const confettiCanvas = document.getElementById("confettiCanvas");
+const ctx = confettiCanvas.getContext("2d");
+let confettiParticles = [];
+function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener("resize", resizeCanvas); resizeCanvas();
+function spawnConfetti(n=180){
+  const w=confettiCanvas.width, h=confettiCanvas.height;
+  for(let i=0;i<n;i++){
+    confettiParticles.push({
+      x: Math.random()*w, y: -10, vx: (Math.random()-0.5)*3, vy: Math.random()*3+2,
+      size: Math.random()*6+4, rot: Math.random()*360, vr: (Math.random()-0.5)*10,
+      color: `hsl(${Math.floor(Math.random()*360)},90%,60%)`, life: 0
+    });
+  }
+}
+let confettiRAF=null;
+function animateConfetti(){
+  if (!confettiParticles.length) return;
+  const w=confettiCanvas.width, h=confettiCanvas.height;
+  ctx.clearRect(0,0,w,h);
+  confettiParticles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.rot+=p.vr; p.life+=1;
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+    ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
+    ctx.restore();
   });
-  return pbs;
+  confettiParticles = confettiParticles.filter(p=> p.y < h+20);
+  confettiRAF = requestAnimationFrame(animateConfetti);
+}
+function triggerFireworks(msg){
+  toast(msg || "Milestone!");
+  spawnConfetti();
+  if (!confettiRAF) animateConfetti();
+  setTimeout(()=>{ confettiParticles=[]; if(confettiRAF){ cancelAnimationFrame(confettiRAF); confettiRAF=null; ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);} }, 2500);
 }
 
-/* ===== Data Fetch ===== */
+/* ===== Milestone tracking in localStorage ===== */
+function keyBadges(name){ return `rt.badges.${name}`; }
+function keyPB(name){ return `rt.pb.${name}`; }
+
+/* ===== Data Fetch + render ===== */
 async function fetchActivities(){
   statusEl.textContent="Loading…";
   try{
     const res = await fetch(scriptUrl,{ cache: "no-store" });
     const activities = await res.json();
 
-    // Always show newest first in the app
     activities.sort((a,b)=> new Date(b.date) - new Date(a.date));
     _allActivities = activities;
 
@@ -354,7 +439,7 @@ async function fetchActivities(){
     const filtered = filter ? activities.filter(r => (r.name||"").toLowerCase()===filter) : activities;
     _filteredActivities = filtered;
 
-    // Update counts + total distance
+    // Counts + totals
     activitiesCountEl.textContent = filtered.length ? `(${filtered.length})` : "";
     const totalKm = filtered.reduce((sum,r)=> sum + (parseFloat(String(r.distance).replace(",", "."))||0), 0);
     activitiesTotalEl.textContent = filtered.length ? `${totalKm.toFixed(2)} km` : "";
@@ -366,11 +451,17 @@ async function fetchActivities(){
     } else {
       filtered.forEach(r=>{
         const date = formatDate(r.date);
+        const name = r.name || "";
         const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
         const time = normalizeTimeStr(r.time || "");
         const pace = r.pace || calcPace(dist, time);
         const tr=document.createElement("tr");
-        tr.innerHTML = `<td>${date}</td><td>${r.name||""}</td><td>${dist?dist.toFixed(2):""}</td><td>${time||""}</td><td>${pace}</td>`;
+        tr.innerHTML = `
+          <td>${date}</td>
+          <td><span class="name-cell">${avatarHTML(name)}<span>${name}</span></span></td>
+          <td>${dist?dist.toFixed(2):""}</td>
+          <td>${time||""}</td>
+          <td>${pace}</td>`;
         activitiesTable.appendChild(tr);
       });
     }
@@ -386,6 +477,7 @@ async function fetchActivities(){
       perRunner[name].secs += secs;
       perRunner[name].runs.push({ date: formatDate(r.date), distance: dist, time: normalizeTimeStr(r.time||""), secs });
     });
+    _perRunner = perRunner;
 
     const sorted = Object.entries(perRunner).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
     leaderboardTable.innerHTML = "";
@@ -407,7 +499,7 @@ async function fetchActivities(){
 
         const tr=document.createElement("tr");
         tr.innerHTML = `
-          <td>${name}</td>
+          <td><span class="name-cell">${avatarHTML(name)}<span>${name}</span></span></td>
           <td>${vals.dist.toFixed(2)}</td>
           <td>${secondsToHMS(vals.secs)}</td>
           <td>${badgesHtml}</td>
@@ -417,11 +509,44 @@ async function fetchActivities(){
       });
     }
 
+    // Fireworks: only check for the last person who submitted (if known)
+    if (lastSubmittedName) checkMilestonesFor(lastSubmittedName);
+
   } catch(err){
     console.error(err);
     toast("Failed to load activities");
   } finally {
     statusEl.textContent="";
+  }
+}
+
+/* ===== Milestone detection ===== */
+function checkMilestonesFor(name){
+  const data = _perRunner[name];
+  if (!data) return;
+
+  // New badges?
+  const currentBadges = getBadges(data.dist);
+  const stored = JSON.parse(localStorage.getItem(keyBadges(name) ) || "[]");
+  const newlyEarned = currentBadges.filter(b => !stored.includes(b));
+  if (newlyEarned.length){
+    triggerFireworks(`${name} unlocked: ${newlyEarned.join(", ")}`);
+    localStorage.setItem(keyBadges(name), JSON.stringify(currentBadges));
+    return; // prefer one burst
+  }
+
+  // New PBs?
+  const pbs = computePBsForRunner(data.runs);
+  const storedPB = JSON.parse(localStorage.getItem(keyPB(name)) || "{}"); // {label: secs}
+  let improved = [];
+  pbs.forEach(pb=>{
+    const prev = storedPB[pb.label];
+    if (prev == null || pb.secs < prev - 0.5) improved.push(`${pb.label} ${pb.time}`);
+    storedPB[pb.label] = pb.secs;
+  });
+  if (improved.length){
+    triggerFireworks(`${name} new PB: ${improved[0]}`);
+    localStorage.setItem(keyPB(name), JSON.stringify(storedPB));
   }
 }
 
@@ -452,15 +577,35 @@ function exportFilteredToCSV(){
   URL.revokeObjectURL(url);
 }
 
+/* ===== Invite modal / QR ===== */
+function openInvite(){
+  const base = window.location.origin + window.location.pathname;
+  const nameFilter = filterSelect.value ? `?name=${encodeURIComponent(filterSelect.value)}` : "";
+  const link = base + nameFilter;
+  inviteLinkEl.textContent = link;
+  const qrURL = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(link);
+  qrImg.src = qrURL;
+  inviteModal.classList.add("show"); inviteModal.setAttribute("aria-hidden","false");
+}
+function closeInvite(){ inviteModal.classList.remove("show"); inviteModal.setAttribute("aria-hidden","true"); }
+inviteBtn.addEventListener("click", openInvite);
+closeInviteBtn.addEventListener("click", closeInvite);
+inviteModal.addEventListener("click", e=>{ if(e.target===inviteModal) closeInvite(); });
+copyInviteBtn.addEventListener("click", async ()=>{
+  const text = inviteLinkEl.textContent;
+  try{ await navigator.clipboard.writeText(text); toast("Invite link copied"); } catch{ toast("Copy failed"); }
+});
+
 /* ===== Submit Handler ===== */
 runForm.addEventListener("submit", async (e)=>{
   e.preventDefault();
   const t = normalizeTimeStr(timeHidden.value);
   if (!t){ toast("Pick a time"); return; }
 
+  const name = document.getElementById("name").value.trim();
   const payload = {
     date: document.getElementById("date").value,
-    name: document.getElementById("name").value.trim(),
+    name,
     distance: document.getElementById("distance").value,
     time: t,
     hoursEnabled: enableHours.checked === true
@@ -479,6 +624,9 @@ runForm.addEventListener("submit", async (e)=>{
       toast("Could not save");
       return;
     }
+
+    // remember who submitted; used to check fireworks after refresh
+    lastSubmittedName = name;
 
     runForm.reset();
     timeHidden.value=""; timeDisplay.textContent="--:--:--"; submitBtn.disabled=true; setHoursUI(false);
@@ -511,7 +659,7 @@ runForm.addEventListener("submit", async (e)=>{
 
 /* ===== Interactions ===== */
 filterSelect.addEventListener("change", fetchActivities);
-refreshBtn.addEventListener("click", fetchActivities);
+document.getElementById("refreshBtn").addEventListener("click", fetchActivities);
 exportCsvBtn.addEventListener("click", exportFilteredToCSV);
 expandAllBtn.addEventListener("click", ()=>{ secActivities.open = true; secLeaderboard.open = true; });
 collapseAllBtn.addEventListener("click", ()=>{ secActivities.open = false; secLeaderboard.open = false; });
@@ -519,7 +667,7 @@ collapseAllBtn.addEventListener("click", ()=>{ secActivities.open = false; secLe
 /* ===== Initial Load ===== */
 fetchActivities();
 
-/* ===== Time picker helpers (placed after DOM used) ===== */
+/* ===== Time picker helpers (ensure after DOM used) ===== */
 function setHoursUI(on){ [labelH,colonH].forEach(el=>el.classList.toggle("hide",!on)); if(!on) tpHours.value="00"; }
 </script>
 </body>
