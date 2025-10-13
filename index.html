@@ -21,11 +21,13 @@
   .row>* { flex:1 1 220px; }
   .table-wrap { overflow-x:auto; }
   table { width:100%; border-collapse:collapse; margin-top:10px; }
-  th,td { border:1px solid #ddd; padding:8px; text-align:center; }
+  th,td { border:1px solid #ddd; padding:8px; text-align:center; vertical-align: middle; }
   th { background:#eee; }
   .muted { color:var(--muted); }
   .toast { position:fixed; right:16px; bottom:16px; background:#222; color:#fff; padding:10px 14px; border-radius:8px; opacity:0; transform:translateY(8px); transition:.25s; }
   .toast.show { opacity:1; transform:translateY(0); }
+
+  /* Time picker modal */
   .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; }
   .modal-backdrop.show { display:flex; }
   .modal { background:#fff; width:min(520px,92vw); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); padding:16px; }
@@ -35,12 +37,18 @@
   .display-chip { display:inline-flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:6px; padding:8px 10px; background:#fafafa; }
   .display-chip code { font-weight:700; }
   .hide { display:none; }
+
+  /* Badge chips */
+  .badges { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .badge  { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; background:#fafafa; font-size:12px; white-space:nowrap; }
+  .badge i { font-style: normal; }
 </style>
 </head>
 <body>
 <h1>Run Tracker</h1>
 
 <div class="wrap">
+  <!-- Add Run -->
   <div class="card">
     <form id="runForm">
       <div class="row">
@@ -57,52 +65,73 @@
           <input type="hidden" id="time" value="" />
         </label>
       </div>
-      <div class="row"><button id="submitBtn" type="submit" disabled>Add Run</button><span id="status" class="muted"></span></div>
+      <div class="row">
+        <button id="submitBtn" type="submit" disabled>Add Run</button>
+        <span id="status" class="muted"></span>
+      </div>
     </form>
   </div>
 
-  <div class="card">
-    <div class="row">
-      <label for="filterSelect">Filter by Name:
-        <select id="filterSelect"><option value="">-- All Names --</option></select>
-      </label>
-      <button id="refreshBtn" type="button" style="max-width:160px">Refresh</button>
+    <!-- Filters -->
+    <div class="card">
+      <div class="row">
+        <label for="filterSelect">Filter by Name:
+          <select id="filterSelect"><option value="">-- All Names --</option></select>
+        </label>
+        <button id="refreshBtn" type="button" style="max-width:160px">Refresh</button>
+      </div>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>Past Activities</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th></tr></thead>
-        <tbody id="activitiesTable"></tbody>
-      </table>
+    <!-- Past Activities -->
+    <div class="card">
+      <h2>Past Activities</h2>
+      <div class="table-wrap">
+        <table aria-live="polite">
+          <thead><tr><th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th></tr></thead>
+          <tbody id="activitiesTable"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>Leaderboard</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badge</th></tr></thead>
-        <tbody id="leaderboardTable"></tbody>
-      </table>
+    <!-- Leaderboard -->
+    <div class="card">
+      <h2>Leaderboard</h2>
+      <div class="table-wrap">
+        <table aria-live="polite">
+          <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badges</th></tr></thead>
+          <tbody id="leaderboardTable"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
+
+    <!-- Support -->
+    <div class="card" style="text-align:center">
+      <h3>Support this App</h3>
+      <form action="https://www.paypal.com/donate" method="post" target="_top">
+        <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
+        <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="Donate with PayPal button" style="max-width:100%;height:auto;" />
+      </form>
+    </div>
 </div>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<!-- Time picker -->
+<!-- Time picker modal -->
 <div id="timeModal" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true">
     <h3>Select Duration</h3>
     <div class="picker-grid">
-      <label class="hide" id="labelH">H <select id="tpHours" aria-label="Hours"></select></label>
+      <label class="hide" id="labelH">H
+        <select id="tpHours" aria-label="Hours"></select>
+      </label>
       <div class="colon hide" id="colonH">:</div>
-      <label>M <select id="tpMinutes" aria-label="Minutes"></select></label>
+      <label>M
+        <select id="tpMinutes" aria-label="Minutes"></select>
+      </label>
       <div class="colon">:</div>
-      <label>S <select id="tpSeconds" aria-label="Seconds"></select></label>
+      <label>S
+        <select id="tpSeconds" aria-label="Seconds"></select>
+      </label>
     </div>
     <div style="display:flex;justify-content:space-between;margin-top:12px;gap:10px">
       <div><input type="checkbox" id="enableHours" /> <label for="enableHours">Add hours</label></div>
@@ -112,23 +141,24 @@
 </div>
 
 <script>
+/* ===== Config (Vercel) ===== */
 const scriptUrl = "/api/proxy";
 
-/* DOM */
+/* ===== DOM ===== */
 const runForm = document.getElementById("runForm");
 const activitiesTable = document.getElementById("activitiesTable");
 const leaderboardTable = document.getElementById("leaderboardTable");
 const filterSelect = document.getElementById("filterSelect");
-const refreshBtn = document.getElementById("refreshBtn");
 const statusEl = document.getElementById("status");
-const submitBtn = document.getElementById("submitBtn");
+const refreshBtn = document.getElementById("refreshBtn");
 const toastEl = document.getElementById("toast");
+const submitBtn = document.getElementById("submitBtn");
 
-/* time widgets */
+/* Time widgets */
 const timeHidden = document.getElementById("time");
 const timeDisplay = document.getElementById("timeDisplay");
-const timeModal = document.getElementById("timeModal");
 const openTimePicker = document.getElementById("openTimePicker");
+const timeModal = document.getElementById("timeModal");
 const tpHours = document.getElementById("tpHours");
 const tpMinutes = document.getElementById("tpMinutes");
 const tpSeconds = document.getElementById("tpSeconds");
@@ -138,9 +168,9 @@ const enableHours = document.getElementById("enableHours");
 const labelH = document.getElementById("labelH");
 const colonH = document.getElementById("colonH");
 
-/* utils */
+/* ===== Utils ===== */
 function toast(m){ toastEl.textContent=m; toastEl.classList.add("show"); setTimeout(()=>toastEl.classList.remove("show"),2000); }
-const pad2=n=>String(n).padStart(2,"0");
+const pad2 = n => String(n).padStart(2,"0");
 function normalizeTimeStr(t){
   if(!t) return "";
   const s=String(t).trim();
@@ -149,66 +179,155 @@ function normalizeTimeStr(t){
   if (/^\d{1,2}:[0-5]\d:[0-5]\d$/.test(s)) { const [h,m,ss]=s.split(":"); return `${pad2(h)}:${m}:${ss}`; }
   return s;
 }
-function timeToSeconds(t){ const s=normalizeTimeStr(t); if(!s) return 0; const [h,m,ss]=s.split(":").map(Number); if([h,m,ss].some(isNaN)) return 0; return h*3600+m*60+ss; }
-function secondsToHMS(sec){ const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.floor(sec%60); return [h,m,s].map(pad2).join(":"); }
-function calcPace(km,t){ const s=timeToSeconds(t); if(!km||s<=0) return "-"; const spk=s/km; const m=Math.floor(spk/60), ss=Math.round(spk%60); return `${m}:${pad2(ss)}`; }
-function getBadge(km){ if (km>=42.2) return "🏅 Marathon"; if (km>=21.1) return "🥈 Half"; if (km>=10) return "🥉 10K"; return ""; }
-function formatDate(d){ return d && d.includes("T") ? d.split("T")[0] : (d||""); }
+function timeToSeconds(t){
+  const s = normalizeTimeStr(t); if(!s) return 0;
+  const [h,m,ss] = s.split(":").map(Number);
+  if ([h,m,ss].some(Number.isNaN)) return 0;
+  return h*3600 + m*60 + ss;
+}
+function secondsToHMS(sec){
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.floor(sec%60);
+  return [h,m,s].map(pad2).join(":");
+}
+function calcPace(distanceKm, timeStr){
+  const secs = timeToSeconds(timeStr);
+  if (!distanceKm || distanceKm <= 0 || secs <= 0) return "-";
+  const pace = secs / distanceKm;
+  const m = Math.floor(pace/60);
+  const s = Math.round(pace % 60);
+  return `${m}:${pad2(s)}`;
+}
+function formatDate(dateStr){ return dateStr && dateStr.includes("T") ? dateStr.split("T")[0] : (dateStr||""); }
 
-/* picker */
-function buildTimeOptions(){ tpHours.innerHTML=""; tpMinutes.innerHTML=""; tpSeconds.innerHTML="";
-  for(let h=0;h<=23;h++){ const o=document.createElement("option"); o.value=pad2(h); o.textContent=pad2(h); tpHours.appendChild(o); }
-  for(let m=0;m<=59;m++){ const o1=document.createElement("option"); o1.value=pad2(m); o1.textContent=pad2(m); tpMinutes.appendChild(o1); const o2=document.createElement("option"); o2.value=pad2(m); o2.textContent=pad2(m); tpSeconds.appendChild(o2); }
+/* ==== Badge logic: return ALL earned badges as array (progress sash) ==== */
+function getBadges(km) {
+  const badges = [];
+  // Event-style early badges
+  if (km >= 5)    badges.push("🏁 5K");
+  if (km >= 10)   badges.push("🥉 10K");
+  if (km >= 21.1) badges.push("🥈 Half");
+  if (km >= 42.2) badges.push("🎖️ Marathon");
+  // Cumulative milestones
+  if (km >= 50)  badges.push("🏅 50 km");
+  if (km >= 100) badges.push("🥇 100 km");
+  if (km >= 150) badges.push("🏆 150 km");
+  if (km >= 200) badges.push("🚀 200 km");
+  if (km >= 250) badges.push("🗻 250 km");
+  if (km >= 300) badges.push("👑 300+ km");
+  return badges;
+}
+
+/* ===== Time Picker ===== */
+function buildTimeOptions(){
+  tpHours.innerHTML = ""; tpMinutes.innerHTML = ""; tpSeconds.innerHTML = "";
+  for (let h=0; h<=23; h++){ const o=document.createElement("option"); o.value=pad2(h); o.textContent=pad2(h); tpHours.appendChild(o); }
+  for (let m=0; m<=59; m++){
+    const o1=document.createElement("option"); o1.value=pad2(m); o1.textContent=pad2(m); tpMinutes.appendChild(o1);
+    const o2=document.createElement("option"); o2.value=pad2(m); o2.textContent=pad2(m); tpSeconds.appendChild(o2);
+  }
 }
 function setHoursUI(on){ [labelH,colonH].forEach(el=>el.classList.toggle("hide",!on)); if(!on) tpHours.value="00"; }
-function openPicker(){ const base=timeHidden.value||"00:00:00"; const [h,m,s]=normalizeTimeStr(base).split(":"); tpHours.value=h; tpMinutes.value=m; tpSeconds.value=s; timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false"); }
+function openPicker(){
+  const base=timeHidden.value||"00:00:00";
+  const [h,m,s]=normalizeTimeStr(base).split(":");
+  tpHours.value=h; tpMinutes.value=m; tpSeconds.value=s;
+  timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false");
+}
 function closePicker(){ timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true"); }
 openTimePicker.addEventListener("click", openPicker);
 tpCancel.addEventListener("click", closePicker);
-timeModal.addEventListener("click", e=>{ if(e.target===timeModal) closePicker(); });
-tpSet.addEventListener("click", ()=>{ const hours=enableHours.checked?tpHours.value:"00"; const val=`${hours}:${tpMinutes.value}:${tpSeconds.value}`; timeHidden.value=val; timeDisplay.textContent=val; submitBtn.disabled=false; closePicker(); });
+timeModal.addEventListener("click", e=>{ if (e.target===timeModal) closePicker(); });
+tpSet.addEventListener("click", ()=>{
+  const hours = enableHours.checked ? tpHours.value : "00";
+  const val = `${hours}:${tpMinutes.value}:${tpSeconds.value}`;
+  timeHidden.value = val;
+  timeDisplay.textContent = val;
+  submitBtn.disabled = false;
+  closePicker();
+});
 enableHours.addEventListener("change", ()=> setHoursUI(enableHours.checked));
 buildTimeOptions(); setHoursUI(false);
 
-/* data fetch */
+/* ===== Data Fetch ===== */
 async function fetchActivities(){
   statusEl.textContent="Loading…";
   try{
-    const res = await fetch(scriptUrl,{ cache:"no-store" });
-    const items = await res.json();
+    const res = await fetch(scriptUrl,{ cache: "no-store" });
+    const activities = await res.json();
 
+    // Build filter dropdown
     const prev = filterSelect.value;
     filterSelect.innerHTML = '<option value="">-- All Names --</option>';
-    [...new Set(items.map(x=>x.name).filter(Boolean))].sort().forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n; if(n===prev) o.selected=true; filterSelect.appendChild(o); });
-    const f = filterSelect.value.trim().toLowerCase();
-    const rows = f ? items.filter(r => (r.name||"").toLowerCase()===f) : items;
-
-    activitiesTable.innerHTML="";
-    if(!rows.length){ activitiesTable.innerHTML="<tr><td colspan='5' class='muted'>No runs yet</td></tr>"; }
-    else rows.forEach(r=>{
-      const dist = parseFloat(String(r.distance).replace(',','.'))||0;
-      const time = normalizeTimeStr(r.time||"");
-      const pace = r.pace || calcPace(dist,time);
-      const tr=document.createElement("tr");
-      tr.innerHTML = `<td>${formatDate(r.date)}</td><td>${r.name||""}</td><td>${dist?dist.toFixed(2):""}</td><td>${time}</td><td>${pace}</td>`;
-      activitiesTable.appendChild(tr);
+    [...new Set(activities.map(r => r.name).filter(Boolean))].sort().forEach(name=>{
+      const opt=document.createElement("option");
+      opt.value=name; opt.textContent=name; if (name===prev) opt.selected=true; filterSelect.appendChild(opt);
     });
 
-    const agg={};
-    items.forEach(r=>{ const n=r.name||""; const d=parseFloat(String(r.distance).replace(',','.'))||0; const s=timeToSeconds(r.time); if(!agg[n]) agg[n]={dist:0,secs:0}; agg[n].dist+=d; agg[n].secs+=s; });
-    const sorted = Object.entries(agg).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
-    leaderboardTable.innerHTML = sorted.length ? "" : "<tr><td colspan='4' class='muted'>No runners yet</td></tr>";
-    sorted.forEach(([n,v])=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${n}</td><td>${v.dist.toFixed(2)}</td><td>${secondsToHMS(v.secs)}</td><td>${getBadge(v.dist)}</td>`; leaderboardTable.appendChild(tr); });
+    const filter = filterSelect.value.trim().toLowerCase();
+    const filtered = filter ? activities.filter(r => (r.name||"").toLowerCase()===filter) : activities;
 
-  }catch(e){ console.error(e); toast("Failed to load"); }
-  finally{ statusEl.textContent=""; }
+    // Activities
+    activitiesTable.innerHTML = "";
+    if (!filtered.length){
+      activitiesTable.innerHTML = "<tr><td colspan='5' class='muted'>No runs yet</td></tr>";
+    } else {
+      filtered.forEach(r=>{
+        const date = formatDate(r.date);
+        const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
+        const time = normalizeTimeStr(r.time || "");
+        const pace = r.pace || calcPace(dist, time);
+        const tr=document.createElement("tr");
+        tr.innerHTML = `<td>${date}</td><td>${r.name||""}</td><td>${dist?dist.toFixed(2):""}</td><td>${time||""}</td><td>${pace}</td>`;
+        activitiesTable.appendChild(tr);
+      });
+    }
+
+    // Leaderboard aggregation
+    const summary = {};
+    activities.forEach(r=>{
+      const name = r.name || "";
+      const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
+      const secs = timeToSeconds(r.time);
+      if (!summary[name]) summary[name] = { dist:0, secs:0 };
+      summary[name].dist += dist;
+      summary[name].secs += secs;
+    });
+
+    // Leaderboard render with chips
+    const sorted = Object.entries(summary).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
+    leaderboardTable.innerHTML = "";
+    if (!sorted.length){
+      leaderboardTable.innerHTML = "<tr><td colspan='4' class='muted'>No runners yet</td></tr>";
+    } else {
+      sorted.forEach(([name, vals])=>{
+        const badgesArr = getBadges(vals.dist);
+        const badgesHtml = badgesArr.length
+          ? `<div class="badges">${badgesArr.map(b => `<span class="badge"><i>${b.split(' ')[0]}</i><span>${b.replace(/^[^ ]+ /,'')}</span></span>`).join("")}</div>`
+          : "";
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td>${name}</td>
+          <td>${vals.dist.toFixed(2)}</td>
+          <td>${secondsToHMS(vals.secs)}</td>
+          <td>${badgesHtml}</td>
+        `;
+        leaderboardTable.appendChild(tr);
+      });
+    }
+
+  } catch(err){
+    console.error(err);
+    toast("Failed to load activities");
+  } finally {
+    statusEl.textContent="";
+  }
 }
 
-/* submit */
-runForm.addEventListener("submit", async e=>{
+/* ===== Submit Handler ===== */
+runForm.addEventListener("submit", async (e)=>{
   e.preventDefault();
   const t = normalizeTimeStr(timeHidden.value);
-  if(!t){ toast("Pick a time"); return; }
+  if (!t){ toast("Pick a time"); return; }
 
   const payload = {
     date: document.getElementById("date").value,
@@ -219,19 +338,35 @@ runForm.addEventListener("submit", async e=>{
   };
 
   try{
-    const resp = await fetch(scriptUrl,{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload), cache:"no-store" });
+    const resp = await fetch(scriptUrl,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload),
+      cache: "no-store"
+    });
     const json = await resp.json().catch(()=>({}));
-    if(!resp.ok || json.ok===false){ console.error("Save error:",json); toast("Could not save"); return; }
+    if (!resp.ok || json.ok === false){
+      console.error("Save error:", json);
+      toast("Could not save");
+      return;
+    }
 
-    runForm.reset(); timeHidden.value=""; timeDisplay.textContent="--:--:--"; submitBtn.disabled=true; setHoursUI(false);
-    toast("Run added"); await fetchActivities();
-  }catch(err){ console.error(err); toast("Network error"); }
+    runForm.reset();
+    timeHidden.value=""; timeDisplay.textContent="--:--:--"; submitBtn.disabled=true; setHoursUI(false);
+    toast("Run added");
+    await fetchActivities();
+  } catch (err){
+    console.error(err);
+    toast("Network error while saving");
+  }
 });
 
+/* ===== Interactions ===== */
 filterSelect.addEventListener("change", fetchActivities);
 refreshBtn.addEventListener("click", fetchActivities);
+
+/* ===== Initial Load ===== */
 fetchActivities();
 </script>
 </body>
 </html>
-
