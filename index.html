@@ -132,7 +132,7 @@
     </div>
   </details>
 
-  <!-- Leaderboard with BADGE CHIPS -->
+  <!-- Leaderboard with badge chips -->
   <div class="card">
     <h2>Leaderboard</h2>
     <div class="table-wrap">
@@ -223,7 +223,7 @@ const cName = document.getElementById("cName"), cText = document.getElementById(
 const commentsClose = document.getElementById("commentsClose");
 
 /* ===== Utils ===== */
-function toast(m){ toastEl.textContent=m; toastEl.classList.add("show"); setTimeout(()=>toastEl.classList.remove("show"),2000); }
+function toast(m){ toastEl.textContent=m; toastEl.classList.add("show"); setTimeout(()=>toastEl.classList.remove("show"),2400); }
 const pad2 = n => String(n).padStart(2,"0");
 function normalizeTimeStr(t){
   if(!t) return "";
@@ -289,11 +289,9 @@ function openReact(runId){
   emojiGrid.innerHTML = POSITIVE_EMOJIS.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join("");
   emojiGrid.querySelectorAll('button').forEach(btn=>{
     btn.onclick = async () => {
-      await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'react', runId, emoji: btn.dataset.emoji, name: localStorage.getItem('rt.me') || '' })
-      });
+      const res = await safePost({ action:'react', runId, emoji: btn.dataset.emoji, name: localStorage.getItem('rt.me') || '' });
+      if (res.ok) { hydrateReactions([runId]); }
       closeReact();
-      hydrateReactions([runId]);
     };
   });
   reactModal.classList.add("show"); reactModal.setAttribute("aria-hidden","false");
@@ -306,7 +304,6 @@ function openComments(runId){
   _commentsTargetRunId = runId;
   cText.value = "";
   loadComments(runId);
-  commentsModal.classList.add("show"); commentsModal.setAttribute("aria-hidden","true"); // for screen readers we could toggle if needed
   commentsModal.classList.add("show"); commentsModal.setAttribute("aria-hidden","false");
 }
 function closeComments(){ commentsModal.classList.remove("show"); commentsModal.setAttribute("aria-hidden","true"); }
@@ -315,8 +312,8 @@ commentsModal.addEventListener("click", e=>{ if (e.target===commentsModal) close
 
 async function loadComments(runId){
   const q = encodeURIComponent(runId);
-  const data = await fetch(`${scriptUrl}?entity=comments&ids=${q}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>({}));
-  const rows = data[runId] || [];
+  const data = await safeGet(`${scriptUrl}?entity=comments&ids=${q}`);
+  const rows = (data && data[runId]) || [];
   commentsList.innerHTML = rows.length ? rows.map(r => `
     <div class="comment-row" data-cid="${esc(r.id)}">
       <div style="flex:1">
@@ -335,11 +332,8 @@ async function loadComments(runId){
       const commentId = btn.dataset.del;
       const pin = prompt("Moderator PIN to delete:");
       if (!pin) return;
-      const resp = await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'deleteComment', commentId, pin })
-      }).then(r=>r.json());
-      if (resp && resp.ok){ toast("Deleted"); loadComments(runId); }
-      else { toast(resp?.error || "Delete failed"); }
+      const res = await safePost({ action:'deleteComment', commentId, pin });
+      if (res.ok){ toast("Deleted"); loadComments(runId); }
     };
   });
 }
@@ -349,21 +343,18 @@ cPost.onclick = async ()=>{
   const name = cName.value.trim();
   const text = cText.value.trim();
   if (!runId || !text){ toast("Write something"); return; }
-  await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ action:'comment', runId, name, comment: text })
-  });
-  cText.value = "";
-  loadComments(runId);
+  const res = await safePost({ action:'comment', runId, name, comment: text });
+  if (res.ok) { cText.value = ""; loadComments(runId); }
 };
 
 async function hydrateReactions(ids){
   if (!ids.length) return;
   const q = encodeURIComponent(ids.join(','));
-  const data = await fetch(`${scriptUrl}?entity=reactions&ids=${q}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>({}));
+  const data = await safeGet(`${scriptUrl}?entity=reactions&ids=${q}`);
   ids.forEach(id=>{
     const bar = document.querySelector(`.social-inline[data-runid="${CSS.escape(String(id))}"]`);
     if (!bar) return;
-    const list = data[id] || [];
+    const list = (data && data[id]) || [];
     const counts = {};
     list.forEach(r => counts[r.emoji]=(counts[r.emoji]||0)+1);
     const chips = POSITIVE_EMOJIS
@@ -371,6 +362,35 @@ async function hydrateReactions(ids){
       .map(e => `<span class="rx"><span>${e}</span><span class="cnt">${counts[e]}</span></span>`);
     bar.innerHTML = chips.join("") || `<span class="muted">No reactions yet</span>`;
   });
+}
+
+/* Robust fetch helpers (warn on non-JSON / auth HTML) */
+async function safeGet(url){
+  try{
+    const r = await fetch(url, { cache:'no-store' });
+    const ct = r.headers.get('content-type') || '';
+    if (!r.ok) { toast(`Error ${r.status} on GET`); return null; }
+    if (!ct.includes('application/json')) {
+      toast('Backend blocked (check Apps Script “Anyone with the link”)');
+      return null;
+    }
+    return await r.json();
+  }catch(e){ toast('Network error'); return null; }
+}
+async function safePost(body){
+  try{
+    const r = await fetch(scriptUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const ct = r.headers.get('content-type') || '';
+    if (!r.ok) { toast(`Error ${r.status} on POST`); return { ok:false }; }
+    if (!ct.includes('application/json')) {
+      toast('Backend blocked (check Apps Script “Anyone with the link”)');
+      return { ok:false };
+    }
+    const j = await r.json();
+    if (j && j.ok) return j;
+    toast(j && j.error ? j.error : 'Request failed');
+    return j || { ok:false };
+  }catch(e){ toast('Network error'); return { ok:false }; }
 }
 
 /* ===== Time picker ===== */
@@ -395,8 +415,7 @@ tpSet.onclick = ()=>{
 async function fetchActivities(){
   statusEl.textContent="Loading…";
   try{
-    const res = await fetch(scriptUrl,{ cache: "no-store" });
-    const activities = await res.json();
+    const activities = await safeGet(scriptUrl) || [];
     activities.sort((a,b)=> new Date(b.date) - new Date(a.date));
 
     // Filter dropdown
@@ -439,7 +458,6 @@ async function fetchActivities(){
             <div class="social-inline" data-runid="${id}" style="margin-bottom:6px;"></div>
             <button class="kebab" type="button" aria-label="More" data-menu="${id}">⋯</button>
             <div class="menu" id="menu-${id}">
-              <button data-like="${id}">👍 Like</button>
               <button data-react="${id}">😀 React</button>
               <button data-comment="${id}">✍️ Comment</button>
               <button data-view="${id}">💬 View Comments</button>
@@ -457,9 +475,6 @@ async function fetchActivities(){
       btn.onclick = ()=>{
         const id = btn.dataset.menu;
         const menu = document.getElementById(`menu-${id}`);
-        const rect = btn.getBoundingClientRect();
-        menu.style.left = (btn.offsetLeft - 10) + "px";
-        menu.style.top  = (btn.offsetTop + btn.offsetHeight + 6) + "px";
         document.querySelectorAll('.menu.show').forEach(m=>{ if(m!==menu) m.classList.remove('show'); });
         menu.classList.toggle("show");
       };
@@ -471,16 +486,6 @@ async function fetchActivities(){
     });
 
     // actions
-    document.querySelectorAll('[data-like]').forEach(b=>{
-      b.onclick = async ()=>{
-        const runId = b.dataset.like;
-        await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ action:'react', runId, emoji: "👍", name: localStorage.getItem('rt.me') || '' })
-        });
-        hydrateReactions([runId]);
-        b.closest('.menu').classList.remove('show');
-      };
-    });
     document.querySelectorAll('[data-react]').forEach(b=>{
       b.onclick = ()=>{ openReact(b.dataset.react); b.closest('.menu').classList.remove('show'); };
     });
@@ -541,17 +546,12 @@ runForm.addEventListener("submit", async (e)=>{
     distance: document.getElementById("distance").value,
     time: t
   };
-  try{
-    const resp = await fetch(scriptUrl,{
-      method:"POST", headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload), cache: "no-store"
-    });
-    const json = await resp.json().catch(()=>({}));
-    if (!resp.ok || json.ok === false){ toast("Could not save"); return; }
+  const res = await safePost(payload);
+  if (res.ok){
     runForm.reset(); timeHidden.value=""; timeDisplay.textContent="--:--:--"; submitBtn.disabled=true;
     toast("Run added");
     await fetchActivities();
-  } catch (err){ console.error(err); toast("Network error"); }
+  }
 });
 
 /* Interactions */
