@@ -1,37 +1,61 @@
-// File: api/proxy.js
+// Robust Apps Script proxy for Vercel (Node/Serverless or Edge-compatible)
+export const config = {
+  api: {
+    bodyParser: false, // don't consume the stream; we forward it ourselves
+  },
+};
+
 export default async function handler(req, res) {
   try {
     const target = process.env.APPS_SCRIPT_URL;
     if (!target) {
-      res.status(500).json({ ok: false, error: "Missing APPS_SCRIPT_URL env" });
+      res.status(500).json({ ok: false, error: "Missing APPS_SCRIPT_URL" });
       return;
     }
 
-    // Build full target URL with query
-    const qs = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
+    // Preserve query string
+    const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
     const url = target + qs;
 
-    // Prepare fetch init
+    // Build init with method + headers
     const init = { method: req.method, headers: {} };
 
-    // Forward headers we care about (keep it simple)
-    const incoming = req.headers || {};
-    if (incoming["content-type"]) init.headers["content-type"] = incoming["content-type"];
+    // Forward content-type if present; default to JSON for non-GET when we send a body
+    const incomingCT = req.headers["content-type"];
+    if (incomingCT) init.headers["content-type"] = incomingCT;
 
+    // ---- Body handling (covers both parsed and raw cases) ----
     if (req.method !== "GET" && req.method !== "HEAD") {
-      // Body: read raw buffer then pass through
-      const buffers = [];
-      for await (const chunk of req) buffers.push(chunk);
-      const bodyBuf = Buffer.concat(buffers);
-      init.body = bodyBuf.length ? bodyBuf : undefined;
+      let bodyBuffer = null;
+
+      // If framework already parsed req.body:
+      if (typeof req.body === "string") {
+        bodyBuffer = Buffer.from(req.body);
+      } else if (req.body && typeof req.body === "object") {
+        // e.g. Next/Vercel parsed JSON to object
+        bodyBuffer = Buffer.from(JSON.stringify(req.body));
+        init.headers["content-type"] = "application/json";
+      } else {
+        // Fall back to reading the raw stream
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        if (chunks.length) bodyBuffer = Buffer.concat(chunks);
+      }
+
+      if (bodyBuffer && bodyBuffer.length) init.body = bodyBuffer;
+      // Ensure CT for JSON if we’re sending a body and none was set
+      if (!init.headers["content-type"] && bodyBuffer) {
+        init.headers["content-type"] = "application/json";
+      }
     }
 
+    // Forward to Apps Script
     const resp = await fetch(url, init);
 
-    // Mirror status and content-type back to the browser
-    const contentType = resp.headers.get("content-type") || "text/plain";
+    // Mirror status & content-type
+    const ct = resp.headers.get("content-type") || "text/plain";
     res.status(resp.status);
-    res.setHeader("content-type", contentType);
+    res.setHeader("content-type", ct);
 
     // Pipe body
     const buf = Buffer.from(await resp.arrayBuffer());
