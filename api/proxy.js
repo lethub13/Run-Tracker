@@ -1,33 +1,42 @@
+// File: api/proxy.js
 export default async function handler(req, res) {
-  const target = process.env.APPS_SCRIPT_URL;
-  if (!target) return res.status(500).json({ ok:false, error:"Missing APPS_SCRIPT_URL" });
-
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0");
-  if (req.method === "OPTIONS") return res.status(200).end();
-
   try {
-    const method = req.method || "GET";
-    const headers = {};
-    let body;
-
-    if (method === "POST") {
-      if (req.body && Object.keys(req.body).length) body = JSON.stringify(req.body);
-      else {
-        body = await new Promise(r => {
-          let d=""; req.on("data", c => d+=c); req.on("end", ()=>r(d||"{}"));
-        });
-      }
-      headers["Content-Type"] = "application/json";
+    const target = process.env.APPS_SCRIPT_URL;
+    if (!target) {
+      res.status(500).json({ ok: false, error: "Missing APPS_SCRIPT_URL env" });
+      return;
     }
 
-    const up = await fetch(target, { method, headers, body, cache:"no-store" });
-    const text = await up.text();
-    try { return res.status(up.ok?200:502).json(JSON.parse(text)); }
-    catch { return res.status(up.ok?200:502).json({ ok:up.ok, status:up.status, body:text }); }
-  } catch (e) {
-    return res.status(500).json({ ok:false, error:"Proxy failed", details:String(e) });
+    // Build full target URL with query
+    const qs = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
+    const url = target + qs;
+
+    // Prepare fetch init
+    const init = { method: req.method, headers: {} };
+
+    // Forward headers we care about (keep it simple)
+    const incoming = req.headers || {};
+    if (incoming["content-type"]) init.headers["content-type"] = incoming["content-type"];
+
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      // Body: read raw buffer then pass through
+      const buffers = [];
+      for await (const chunk of req) buffers.push(chunk);
+      const bodyBuf = Buffer.concat(buffers);
+      init.body = bodyBuf.length ? bodyBuf : undefined;
+    }
+
+    const resp = await fetch(url, init);
+
+    // Mirror status and content-type back to the browser
+    const contentType = resp.headers.get("content-type") || "text/plain";
+    res.status(resp.status);
+    res.setHeader("content-type", contentType);
+
+    // Pipe body
+    const buf = Buffer.from(await resp.arrayBuffer());
+    res.send(buf);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String(err) });
   }
 }
