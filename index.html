@@ -27,30 +27,12 @@
   .toast { position:fixed; right:16px; bottom:16px; background:#222; color:#fff; padding:10px 14px; border-radius:8px; opacity:0; transform:translateY(8px); transition:.25s; z-index:1000; }
   .toast.show { opacity:1; transform:translateY(0); }
 
-  /* Time picker modal */
-  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:900; }
-  .modal-backdrop.show { display:flex; }
-  .modal { background:#fff; width:min(520px,92vw); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); padding:16px; }
-  .picker-grid { display:grid; grid-template-columns:auto 1fr auto 1fr auto 1fr; gap:8px; align-items:center; }
-  .picker-grid select { font-size:18px; padding:8px 10px; height:44px; }
-  .colon { font-size:20px; font-weight:700; }
-  .display-chip { display:inline-flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:6px; padding:8px 10px; background:#fafafa; }
-  .display-chip code { font-weight:700; }
-  .hide { display:none; }
-
-  /* Badge & PB chips */
-  .badges { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
-  .badge  { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; background:#fafafa; font-size:12px; white-space:nowrap; }
-  .badge i { font-style: normal; }
-  .pbs { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
-  .pb-chip { display:inline-flex; gap:6px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; background:#eef7ff; font-size:12px; white-space:nowrap; }
-
-  /* Collapsible sections */
+  /* Collapsible Past Activities */
   details.card { padding: 0; }
   details.card > .content { padding: 0 16px 16px 16px; }
   .summary-row {
-    list-style: none; display: flex; align-items: center; justify-content: space-between;
-    gap: 12px; padding: 14px 16px; cursor: pointer; font-weight: 700; border-bottom: 1px solid #eee; user-select: none;
+    list-style: none; display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:14px 16px; cursor:pointer; font-weight:700; border-bottom:1px solid #eee; user-select:none;
   }
   .summary-row .right { display:flex; align-items:center; gap:8px; }
   .chev { transition: transform .2s ease; }
@@ -58,26 +40,41 @@
   details:not([open]) .chev { transform: rotate(-90deg); }
   .count { font-weight: 400; color: var(--muted); margin-left: 6px; }
 
-  /* Tiny controls row */
-  .controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-
   /* Avatars */
   .name-cell { display:flex; align-items:center; gap:8px; }
-  .avatar {
-    width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
-    font-size:12px; font-weight:700; color:#fff; flex:0 0 28px;
-  }
+  .avatar { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; flex:0 0 28px; }
 
-  /* Fireworks canvas */
-  #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 1100; }
-  /* Invite modal tweaks */
-  .qr-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
-  .qr-wrap img { width:220px; height:220px; }
-  .qr-link { font-size:12px; color:var(--muted); word-break:break-all; text-align:center; }
+  /* Social inline counts */
+  .social-inline { display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; font-size:13px; }
+  .rx { display:inline-flex; gap:4px; align-items:center; padding:2px 6px; border:1px solid #e5e5e5; border-radius:999px; background:#fafafa; }
+  .rx .cnt { min-width:1.2em; text-align:right; }
+
+  /* Kebab menu */
+  .kebab { background:#fff; color:#111; border:1px solid #ddd; width:32px; height:32px; border-radius:6px; }
+  .menu { position:absolute; background:#fff; border:1px solid #ddd; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.15); padding:6px; display:none; z-index:800; }
+  .menu.show { display:block; }
+  .menu button { background:transparent; color:#111; border:none; padding:8px 10px; width:100%; text-align:left; border-radius:6px; }
+  .menu button:hover { background:#f5f5f5; }
+
+  /* Modals */
+  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:900; }
+  .modal-backdrop.show { display:flex; }
+  .modal { background:#fff; width:min(560px,92vw); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); padding:16px; }
+  .emoji-grid { display:flex; flex-wrap:wrap; gap:8px; }
+  .emoji-grid button { font-size:22px; background:#fff; border:1px solid #eee; border-radius:8px; padding:6px 10px; }
+  .emoji-grid button:hover { background:#f5f5f5; }
+  .comments-list { display:flex; flex-direction:column; gap:8px; margin:10px 0; max-height:50vh; overflow:auto; }
+  .comment-row { display:flex; gap:8px; align-items:flex-start; justify-content:space-between; border:1px solid #eee; padding:8px; border-radius:8px; }
+  .comment-meta { font-size:12px; color:var(--muted); }
+  .danger { background:#e53935 !important; color:#fff !important; border-color:#e53935 !important; }
+
+  /* Badge chips on leaderboard */
+  .badges { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .badge  { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid #e5e5e5; border-radius:999px; background:#fafafa; font-size:12px; white-space:nowrap; }
+  .badge i { font-style: normal; }
 </style>
 </head>
 <body>
-<canvas id="confettiCanvas"></canvas>
 <h1>Run Tracker</h1>
 
 <div class="wrap">
@@ -105,23 +102,17 @@
     </form>
   </div>
 
-  <!-- Filters + global controls -->
+  <!-- Filters -->
   <div class="card">
     <div class="row">
       <label for="filterSelect">Filter by Name:
         <select id="filterSelect"><option value="">-- All Names --</option></select>
       </label>
-      <div class="controls" style="flex:1; justify-content:flex-end;">
-        <button id="inviteBtn" type="button" class="btn-secondary">Invite</button>
-        <button id="exportCsvBtn" type="button" class="btn-secondary">Export CSV</button>
-        <button id="expandAllBtn" type="button" class="btn-secondary">Expand all</button>
-        <button id="collapseAllBtn" type="button" class="btn-secondary">Collapse all</button>
-        <button id="refreshBtn" type="button" class="btn-secondary">Refresh</button>
-      </div>
+      <button id="refreshBtn" type="button" class="btn-secondary" style="max-width:160px">Refresh</button>
     </div>
   </div>
 
-  <!-- Past Activities (collapsible) -->
+  <!-- Past Activities -->
   <details id="secActivities" class="card" open>
     <summary class="summary-row">
       <span>Past Activities <span id="activitiesCount" class="count"></span></span>
@@ -130,91 +121,76 @@
     <div class="content">
       <div class="table-wrap">
         <table aria-live="polite">
-          <thead><tr><th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Date</th><th>Name</th><th>Distance (km)</th><th>Time</th><th>Pace (min/km)</th><th>⋯</th>
+            </tr>
+          </thead>
           <tbody id="activitiesTable"></tbody>
         </table>
       </div>
     </div>
   </details>
 
-  <!-- Leaderboard (collapsible) -->
-  <details id="secLeaderboard" class="card" open>
-    <summary class="summary-row">
-      <span>Leaderboard <span id="leaderboardCount" class="count"></span></span>
-      <span class="right"><span class="chev" aria-hidden="true">▾</span></span>
-    </summary>
-    <div class="content">
-      <div class="table-wrap">
-        <table aria-live="polite">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Total Distance (km)</th>
-              <th>Total Time</th>
-              <th>Badges</th>
-              <th>PBs</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboardTable"></tbody>
-        </table>
-      </div>
+  <!-- Leaderboard with BADGE CHIPS -->
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <div class="table-wrap">
+      <table aria-live="polite">
+        <thead><tr><th>Name</th><th>Total Distance (km)</th><th>Total Time</th><th>Badges</th></tr></thead>
+        <tbody id="leaderboardTable"></tbody>
+      </table>
     </div>
-  </details>
-
-  <!-- Support -->
-  <div class="card" style="text-align:center">
-    <h3>Support this App</h3>
-    <form action="https://www.paypal.com/donate" method="post" target="_top">
-      <input type="hidden" name="hosted_button_id" value="WYBRQ9EGCMK4Y" />
-      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="Donate with PayPal button" style="max-width:100%;height:auto;" />
-    </form>
   </div>
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<!-- Time picker modal -->
-<div id="timeModal" class="modal-backdrop" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true">
-    <h3>Select Duration</h3>
-    <div class="picker-grid">
-      <label class="hide" id="labelH">H
-        <select id="tpHours" aria-label="Hours"></select>
-      </label>
-      <div class="colon hide" id="colonH">:</div>
-      <label>M
-        <select id="tpMinutes" aria-label="Minutes"></select>
-      </label>
-      <div class="colon">:</div>
-      <label>S
-        <select id="tpSeconds" aria-label="Seconds"></select>
-      </label>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:12px;gap:10px">
-      <div><input type="checkbox" id="enableHours" /> <label for="enableHours">Add hours</label></div>
-      <div><button type="button" id="tpCancel" class="btn-secondary">Cancel</button> <button type="button" id="tpSet">Set</button></div>
+<!-- React Picker Modal -->
+<div id="reactModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal">
+    <h3>React to this run</h3>
+    <div class="emoji-grid" id="emojiGrid"></div>
+    <div style="text-align:right;margin-top:10px">
+      <button type="button" class="btn-secondary" id="reactClose">Close</button>
     </div>
   </div>
 </div>
 
-<!-- Invite modal -->
-<div id="inviteModal" class="modal-backdrop" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true">
-    <h3>Invite people</h3>
-    <div class="qr-wrap">
-      <img id="qrImg" alt="Invite QR" />
-      <div class="qr-link" id="inviteLink"></div>
-      <div style="display:flex; gap:8px;">
-        <button id="copyInviteBtn" class="btn-secondary" type="button">Copy link</button>
-        <button id="closeInviteBtn" class="btn-secondary" type="button">Close</button>
-      </div>
-      <small class="muted">QR includes current name filter if set.</small>
+<!-- Comments Modal -->
+<div id="commentsModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal">
+    <h3>Comments</h3>
+    <div id="commentsList" class="comments-list"></div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input type="text" id="cName" placeholder="Your name (optional)" style="flex:0 0 30%">
+      <input type="text" id="cText" placeholder="Write a comment…" style="flex:1">
+      <button id="cPost">Post</button>
+    </div>
+    <div style="text-align:right;margin-top:10px">
+      <button type="button" class="btn-secondary" id="commentsClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Time picker -->
+<div id="timeModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal">
+    <h3>Select Duration</h3>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <select id="tpH"></select> :
+      <select id="tpM"></select> :
+      <select id="tpS"></select>
+    </div>
+    <div style="text-align:right;margin-top:10px">
+      <button type="button" class="btn-secondary" id="tpCancel">Cancel</button>
+      <button type="button" id="tpSet">Set</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ===== Config (Vercel) ===== */
+/* ===== Config ===== */
 const scriptUrl = "/api/proxy";
 
 /* ===== DOM ===== */
@@ -224,38 +200,27 @@ const leaderboardTable = document.getElementById("leaderboardTable");
 const filterSelect = document.getElementById("filterSelect");
 const statusEl = document.getElementById("status");
 const refreshBtn = document.getElementById("refreshBtn");
-const exportCsvBtn = document.getElementById("exportCsvBtn");
-const expandAllBtn = document.getElementById("expandAllBtn");
-const collapseAllBtn = document.getElementById("collapseAllBtn");
-const inviteBtn = document.getElementById("inviteBtn");
 const toastEl = document.getElementById("toast");
-const submitBtn = document.getElementById("submitBtn");
 const activitiesCountEl = document.getElementById("activitiesCount");
 const activitiesTotalEl = document.getElementById("activitiesTotal");
-const leaderboardCountEl = document.getElementById("leaderboardCount");
-const secActivities = document.getElementById("secActivities");
-const secLeaderboard = document.getElementById("secLeaderboard");
 
 /* Time widgets */
 const timeHidden = document.getElementById("time");
 const timeDisplay = document.getElementById("timeDisplay");
 const openTimePicker = document.getElementById("openTimePicker");
 const timeModal = document.getElementById("timeModal");
-const tpHours = document.getElementById("tpHours");
-const tpMinutes = document.getElementById("tpMinutes");
-const tpSeconds = document.getElementById("tpSeconds");
-const tpSet = document.getElementById("tpSet");
-const tpCancel = document.getElementById("tpCancel");
-const enableHours = document.getElementById("enableHours");
-const labelH = document.getElementById("labelH");
-const colonH = document.getElementById("colonH");
+const tpH = document.getElementById("tpH"), tpM = document.getElementById("tpM"), tpS = document.getElementById("tpS");
+const tpCancel = document.getElementById("tpCancel"), tpSet = document.getElementById("tpSet");
+const submitBtn = document.getElementById("submitBtn");
 
-/* Invite modal DOM */
-const inviteModal = document.getElementById("inviteModal");
-const qrImg = document.getElementById("qrImg");
-const inviteLinkEl = document.getElementById("inviteLink");
-const copyInviteBtn = document.getElementById("copyInviteBtn");
-const closeInviteBtn = document.getElementById("closeInviteBtn");
+/* React + Comments modals */
+const reactModal = document.getElementById("reactModal");
+const emojiGrid = document.getElementById("emojiGrid");
+const reactClose = document.getElementById("reactClose");
+const commentsModal = document.getElementById("commentsModal");
+const commentsList = document.getElementById("commentsList");
+const cName = document.getElementById("cName"), cText = document.getElementById("cText"), cPost = document.getElementById("cPost");
+const commentsClose = document.getElementById("commentsClose");
 
 /* ===== Utils ===== */
 function toast(m){ toastEl.textContent=m; toastEl.classList.add("show"); setTimeout(()=>toastEl.classList.remove("show"),2000); }
@@ -287,8 +252,16 @@ function calcPace(distanceKm, timeStr){
   return `${m}:${pad2(s)}`;
 }
 function formatDate(dateStr){ return dateStr && dateStr.includes("T") ? dateStr.split("T")[0] : (dateStr||""); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 
-/* ==== Badge logic: ALL earned badges (progress sash) ==== */
+/* Avatars */
+const PALETTE = ["#E57373","#F06292","#BA68C8","#9575CD","#7986CB","#64B5F6","#4FC3F7","#4DD0E1","#4DB6AC","#81C784","#AED581","#DCE775","#FFF176","#FFD54F","#FFB74D","#A1887F","#90A4AE"];
+function hashCode(str){ let h=0; for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; } return Math.abs(h); }
+function colorForName(name){ if(!name) return "#888"; return PALETTE[hashCode(name)%PALETTE.length]; }
+function initials(name){ const parts=String(name||"").trim().split(/\s+/).filter(Boolean); if (!parts.length) return "?"; if (parts.length===1) return parts[0].slice(0,2).toUpperCase(); return (parts[0][0]+parts[1][0]).toUpperCase(); }
+function avatarHTML(name){ const bg=colorForName(name), text=initials(name); return `<span class="avatar" style="background:${bg}">${text}</span>`; }
+
+/* ===== Badges (progress sash) on leaderboard ===== */
 function getBadges(km) {
   const badges = [];
   if (km >= 5)    badges.push("🏁 5K");
@@ -304,130 +277,129 @@ function getBadges(km) {
   return badges;
 }
 
-/* ===== PB specs (with tolerance) ===== */
-const PB_SPECS = [
-  { label: "5K",   target: 5.0,   tol: 0.25 },
-  { label: "10K",  target: 10.0,  tol: 0.25 },
-  { label: "Half", target: 21.1,  tol: 0.25 },
-  { label: "Marathon", target: 42.2, tol: 0.25 }
-];
-function computePBsForRunner(runs){
-  const pbs = [];
-  PB_SPECS.forEach(spec=>{
-    const candidates = runs.filter(r => Math.abs(r.distance - spec.target) <= spec.tol && r.secs > 0);
-    if (candidates.length){
-      const best = candidates.reduce((a,b)=> a.secs <= b.secs ? a : b);
-      pbs.push({ label: spec.label, time: secondsToHMS(best.secs), date: best.date, distance: best.distance.toFixed(2), secs: best.secs });
-    }
-  });
-  return pbs;
-}
-
-/* ===== Avatars ===== */
-const PALETTE = [
-  "#E57373","#F06292","#BA68C8","#9575CD","#7986CB","#64B5F6","#4FC3F7","#4DD0E1",
-  "#4DB6AC","#81C784","#AED581","#DCE775","#FFF176","#FFD54F","#FFB74D","#A1887F",
-  "#90A4AE"
-];
-function hashCode(str){ let h=0; for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; } return Math.abs(h); }
-function colorForName(name){ if(!name) return "#888"; return PALETTE[hashCode(name)%PALETTE.length]; }
-function initials(name){
-  const parts=String(name||"").trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "?";
-  if (parts.length===1) return parts[0].slice(0,2).toUpperCase();
-  return (parts[0][0]+parts[1][0]).toUpperCase();
-}
-function avatarHTML(name){ const bg=colorForName(name), text=initials(name); return `<span class="avatar" style="background:${bg}">${text}</span>`; }
-
-/* ===== Time Picker ===== */
-function buildTimeOptions(){
-  tpHours.innerHTML = ""; tpMinutes.innerHTML = ""; tpSeconds.innerHTML = "";
-  for (let h=0; h<=23; h++){ const o=document.createElement("option"); o.value=pad2(h); o.textContent=pad2(h); tpHours.appendChild(o); }
-  for (let m=0; m<=59; m++){
-    const o1=document.createElement("option"); o1.value=pad2(m); o1.textContent=pad2(m); tpMinutes.appendChild(o1);
-    const o2=document.createElement("option"); o2.value=pad2(m); o2.textContent=pad2(m); tpSeconds.appendChild(o2);
-  }
-}
-function setHoursUI(on){ [labelH,colonH].forEach(el=>el.classList.toggle("hide",!on)); if(!on) tpHours.value="00"; }
-function openPicker(){
-  const base=timeHidden.value||"00:00:00";
-  const [h,m,s]=normalizeTimeStr(base).split(":");
-  tpHours.value=h; tpMinutes.value=m; tpSeconds.value=s;
-  timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false");
-}
-function closePicker(){ timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true"); }
-openTimePicker.addEventListener("click", openPicker);
-tpCancel.addEventListener("click", closePicker);
-timeModal.addEventListener("click", e=>{ if (e.target===timeModal) closePicker(); });
-tpSet.addEventListener("click", ()=>{
-  const hours = enableHours.checked ? tpHours.value : "00";
-  const val = `${hours}:${tpMinutes.value}:${tpSeconds.value}`;
-  timeHidden.value = val;
-  timeDisplay.textContent = val;
-  submitBtn.disabled = false;
-  closePicker();
-});
-enableHours.addEventListener("change", ()=> setHoursUI(enableHours.checked));
-buildTimeOptions(); setHoursUI(false);
-
-/* ===== State & data cache ===== */
-let _allActivities = [];
+/* ===== Social (frontend) ===== */
+const POSITIVE_EMOJIS = ["👍","🎉","👏","💪","🔥","🥳","🏅","❤️"];
 let _filteredActivities = [];
-let _perRunner = {};
-let lastSubmittedName = null;     // set after POST to personalize fireworks
+let _visibleIds = [];
+let _reactTargetRunId = null;
+let _commentsTargetRunId = null;
 
-/* ===== Fireworks (confetti) ===== */
-const confettiCanvas = document.getElementById("confettiCanvas");
-const ctx = confettiCanvas.getContext("2d");
-let confettiParticles = [];
-function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
-window.addEventListener("resize", resizeCanvas); resizeCanvas();
-function spawnConfetti(n=180){
-  const w=confettiCanvas.width, h=confettiCanvas.height;
-  for(let i=0;i<n;i++){
-    confettiParticles.push({
-      x: Math.random()*w, y: -10, vx: (Math.random()-0.5)*3, vy: Math.random()*3+2,
-      size: Math.random()*6+4, rot: Math.random()*360, vr: (Math.random()-0.5)*10,
-      color: `hsl(${Math.floor(Math.random()*360)},90%,60%)`, life: 0
-    });
-  }
-}
-let confettiRAF=null;
-function animateConfetti(){
-  if (!confettiParticles.length) return;
-  const w=confettiCanvas.width, h=confettiCanvas.height;
-  ctx.clearRect(0,0,w,h);
-  confettiParticles.forEach(p=>{
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.rot+=p.vr; p.life+=1;
-    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
-    ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
-    ctx.restore();
+function openReact(runId){
+  _reactTargetRunId = runId;
+  emojiGrid.innerHTML = POSITIVE_EMOJIS.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join("");
+  emojiGrid.querySelectorAll('button').forEach(btn=>{
+    btn.onclick = async () => {
+      await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'react', runId, emoji: btn.dataset.emoji, name: localStorage.getItem('rt.me') || '' })
+      });
+      closeReact();
+      hydrateReactions([runId]);
+    };
   });
-  confettiParticles = confettiParticles.filter(p=> p.y < h+20);
-  confettiRAF = requestAnimationFrame(animateConfetti);
+  reactModal.classList.add("show"); reactModal.setAttribute("aria-hidden","false");
 }
-function triggerFireworks(msg){
-  toast(msg || "Milestone!");
-  spawnConfetti();
-  if (!confettiRAF) animateConfetti();
-  setTimeout(()=>{ confettiParticles=[]; if(confettiRAF){ cancelAnimationFrame(confettiRAF); confettiRAF=null; ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);} }, 2500);
+function closeReact(){ reactModal.classList.remove("show"); reactModal.setAttribute("aria-hidden","true"); }
+reactClose.onclick = closeReact;
+reactModal.addEventListener("click", e=>{ if (e.target===reactModal) closeReact(); });
+
+function openComments(runId){
+  _commentsTargetRunId = runId;
+  cText.value = "";
+  loadComments(runId);
+  commentsModal.classList.add("show"); commentsModal.setAttribute("aria-hidden","true"); // for screen readers we could toggle if needed
+  commentsModal.classList.add("show"); commentsModal.setAttribute("aria-hidden","false");
+}
+function closeComments(){ commentsModal.classList.remove("show"); commentsModal.setAttribute("aria-hidden","true"); }
+commentsClose.onclick = closeComments;
+commentsModal.addEventListener("click", e=>{ if (e.target===commentsModal) closeComments(); });
+
+async function loadComments(runId){
+  const q = encodeURIComponent(runId);
+  const data = await fetch(`${scriptUrl}?entity=comments&ids=${q}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>({}));
+  const rows = data[runId] || [];
+  commentsList.innerHTML = rows.length ? rows.map(r => `
+    <div class="comment-row" data-cid="${esc(r.id)}">
+      <div style="flex:1">
+        <div><b>${esc(r.name||'Anonymous')}</b></div>
+        <div>${esc(r.comment)}</div>
+        <div class="comment-meta">${esc(r.dt||'')}</div>
+      </div>
+      <div>
+        <button class="danger" data-del="${esc(r.id)}">🗑️</button>
+      </div>
+    </div>
+  `).join("") : '<div class="muted">No comments yet</div>';
+
+  commentsList.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const commentId = btn.dataset.del;
+      const pin = prompt("Moderator PIN to delete:");
+      if (!pin) return;
+      const resp = await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'deleteComment', commentId, pin })
+      }).then(r=>r.json());
+      if (resp && resp.ok){ toast("Deleted"); loadComments(runId); }
+      else { toast(resp?.error || "Delete failed"); }
+    };
+  });
 }
 
-/* ===== Milestone tracking in localStorage ===== */
-function keyBadges(name){ return `rt.badges.${name}`; }
-function keyPB(name){ return `rt.pb.${name}`; }
+cPost.onclick = async ()=>{
+  const runId = _commentsTargetRunId;
+  const name = cName.value.trim();
+  const text = cText.value.trim();
+  if (!runId || !text){ toast("Write something"); return; }
+  await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'comment', runId, name, comment: text })
+  });
+  cText.value = "";
+  loadComments(runId);
+};
 
-/* ===== Data Fetch + render ===== */
+async function hydrateReactions(ids){
+  if (!ids.length) return;
+  const q = encodeURIComponent(ids.join(','));
+  const data = await fetch(`${scriptUrl}?entity=reactions&ids=${q}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>({}));
+  ids.forEach(id=>{
+    const bar = document.querySelector(`.social-inline[data-runid="${CSS.escape(String(id))}"]`);
+    if (!bar) return;
+    const list = data[id] || [];
+    const counts = {};
+    list.forEach(r => counts[r.emoji]=(counts[r.emoji]||0)+1);
+    const chips = POSITIVE_EMOJIS
+      .filter(e => counts[e])
+      .map(e => `<span class="rx"><span>${e}</span><span class="cnt">${counts[e]}</span></span>`);
+    bar.innerHTML = chips.join("") || `<span class="muted">No reactions yet</span>`;
+  });
+}
+
+/* ===== Time picker ===== */
+function buildTimeOptions(){
+  for (let h=0; h<=23; h++){ tpH.append(new Option(pad2(h), pad2(h))); }
+  for (let m=0; m<=59; m++){ tpM.append(new Option(pad2(m), pad2(m))); tpS.append(new Option(pad2(m), pad2(m))); }
+}
+buildTimeOptions();
+openTimePicker.addEventListener("click", ()=>{
+  const base=timeHidden.value||"00:00:00"; const [h,m,s]=normalizeTimeStr(base).split(":");
+  tpH.value=h; tpM.value=m; tpS.value=s;
+  timeModal.classList.add("show"); timeModal.setAttribute("aria-hidden","false");
+});
+tpCancel.onclick = ()=>{ timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true"); };
+tpSet.onclick = ()=>{
+  const val = `${tpH.value}:${tpM.value}:${tpS.value}`;
+  timeHidden.value = val; timeDisplay.textContent = val; submitBtn.disabled = false;
+  timeModal.classList.remove("show"); timeModal.setAttribute("aria-hidden","true");
+};
+
+/* ===== Data ===== */
 async function fetchActivities(){
   statusEl.textContent="Loading…";
   try{
     const res = await fetch(scriptUrl,{ cache: "no-store" });
     const activities = await res.json();
-
     activities.sort((a,b)=> new Date(b.date) - new Date(a.date));
-    _allActivities = activities;
 
-    // Build filter dropdown
+    // Filter dropdown
     const prev = filterSelect.value;
     filterSelect.innerHTML = '<option value="">-- All Names --</option>';
     [...new Set(activities.map(r => r.name).filter(Boolean))].sort().forEach(name=>{
@@ -439,236 +411,156 @@ async function fetchActivities(){
     const filtered = filter ? activities.filter(r => (r.name||"").toLowerCase()===filter) : activities;
     _filteredActivities = filtered;
 
-    // Counts + totals
     activitiesCountEl.textContent = filtered.length ? `(${filtered.length})` : "";
     const totalKm = filtered.reduce((sum,r)=> sum + (parseFloat(String(r.distance).replace(",", "."))||0), 0);
     activitiesTotalEl.textContent = filtered.length ? `${totalKm.toFixed(2)} km` : "";
 
-    // Activities table
     activitiesTable.innerHTML = "";
+    const visibleIds = [];
     if (!filtered.length){
-      activitiesTable.innerHTML = "<tr><td colspan='5' class='muted'>No runs yet</td></tr>";
+      activitiesTable.innerHTML = "<tr><td colspan='6' class='muted'>No runs yet</td></tr>";
     } else {
       filtered.forEach(r=>{
+        const id = r.id;
         const date = formatDate(r.date);
         const name = r.name || "";
         const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
         const time = normalizeTimeStr(r.time || "");
         const pace = r.pace || calcPace(dist, time);
+
         const tr=document.createElement("tr");
         tr.innerHTML = `
           <td>${date}</td>
-          <td><span class="name-cell">${avatarHTML(name)}<span>${name}</span></span></td>
+          <td><span class="name-cell">${avatarHTML(name)}<span>${esc(name)}</span></span></td>
           <td>${dist?dist.toFixed(2):""}</td>
           <td>${time||""}</td>
-          <td>${pace}</td>`;
+          <td>${pace}</td>
+          <td style="position:relative">
+            <div class="social-inline" data-runid="${id}" style="margin-bottom:6px;"></div>
+            <button class="kebab" type="button" aria-label="More" data-menu="${id}">⋯</button>
+            <div class="menu" id="menu-${id}">
+              <button data-like="${id}">👍 Like</button>
+              <button data-react="${id}">😀 React</button>
+              <button data-comment="${id}">✍️ Comment</button>
+              <button data-view="${id}">💬 View Comments</button>
+            </div>
+          </td>
+        `;
         activitiesTable.appendChild(tr);
+        visibleIds.push(id);
       });
     }
+    _visibleIds = visibleIds;
 
-    // Leaderboard aggregation + PBs
-    const perRunner = {}; // name -> { dist, secs, runs:[] }
+    // kebab menus
+    document.querySelectorAll('[data-menu]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const id = btn.dataset.menu;
+        const menu = document.getElementById(`menu-${id}`);
+        const rect = btn.getBoundingClientRect();
+        menu.style.left = (btn.offsetLeft - 10) + "px";
+        menu.style.top  = (btn.offsetTop + btn.offsetHeight + 6) + "px";
+        document.querySelectorAll('.menu.show').forEach(m=>{ if(m!==menu) m.classList.remove('show'); });
+        menu.classList.toggle("show");
+      };
+    });
+    document.addEventListener('click', (e)=>{
+      if (!e.target.closest('.menu') && !e.target.closest('[data-menu]')){
+        document.querySelectorAll('.menu.show').forEach(m=>m.classList.remove('show'));
+      }
+    });
+
+    // actions
+    document.querySelectorAll('[data-like]').forEach(b=>{
+      b.onclick = async ()=>{
+        const runId = b.dataset.like;
+        await fetch(scriptUrl,{ method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'react', runId, emoji: "👍", name: localStorage.getItem('rt.me') || '' })
+        });
+        hydrateReactions([runId]);
+        b.closest('.menu').classList.remove('show');
+      };
+    });
+    document.querySelectorAll('[data-react]').forEach(b=>{
+      b.onclick = ()=>{ openReact(b.dataset.react); b.closest('.menu').classList.remove('show'); };
+    });
+    document.querySelectorAll('[data-comment]').forEach(b=>{
+      b.onclick = ()=>{ openComments(b.dataset.comment); cText.focus(); b.closest('.menu').classList.remove('show'); };
+    });
+    document.querySelectorAll('[data-view]').forEach(b=>{
+      b.onclick = ()=>{ openComments(b.dataset.view); b.closest('.menu').classList.remove('show'); };
+    });
+
+    hydrateReactions(visibleIds);
+
+    // Leaderboard with badge chips
+    const summary = {};
     activities.forEach(r=>{
       const name = r.name || "";
       const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
       const secs = timeToSeconds(r.time);
-      if (!perRunner[name]) perRunner[name] = { dist:0, secs:0, runs:[] };
-      perRunner[name].dist += dist;
-      perRunner[name].secs += secs;
-      perRunner[name].runs.push({ date: formatDate(r.date), distance: dist, time: normalizeTimeStr(r.time||""), secs });
+      if (!summary[name]) summary[name] = { dist:0, secs:0 };
+      summary[name].dist += dist;
+      summary[name].secs += secs;
     });
-    _perRunner = perRunner;
-
-    const sorted = Object.entries(perRunner).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
+    const sorted=Object.entries(summary).filter(([n])=>n).sort((a,b)=>b[1].dist-a[1].dist);
     leaderboardTable.innerHTML = "";
-    leaderboardCountEl.textContent = sorted.length ? `(${sorted.length})` : "";
-
     if (!sorted.length){
-      leaderboardTable.innerHTML = "<tr><td colspan='5' class='muted'>No runners yet</td></tr>";
+      leaderboardTable.innerHTML = "<tr><td colspan='4' class='muted'>No runners yet</td></tr>";
     } else {
-      sorted.forEach(([name, vals])=>{
+      sorted.forEach(([name,vals])=>{
         const badgesArr = getBadges(vals.dist);
         const badgesHtml = badgesArr.length
           ? `<div class="badges">${badgesArr.map(b => `<span class="badge"><i>${b.split(' ')[0]}</i><span>${b.replace(/^[^ ]+ /,'')}</span></span>`).join("")}</div>`
           : "";
-
-        const pbs = computePBsForRunner(vals.runs);
-        const pbsHtml = pbs.length
-          ? `<div class="pbs">${pbs.map(pb => `<span class="pb-chip" title="${pb.label} on ${pb.date} (${pb.distance} km)">${pb.label} ${pb.time}</span>`).join("")}</div>`
-          : "";
-
-        const tr=document.createElement("tr");
-        tr.innerHTML = `
-          <td><span class="name-cell">${avatarHTML(name)}<span>${name}</span></span></td>
+        const row=document.createElement("tr");
+        row.innerHTML = `
+          <td><span class="name-cell">${avatarHTML(name)}<span>${esc(name)}</span></span></td>
           <td>${vals.dist.toFixed(2)}</td>
           <td>${secondsToHMS(vals.secs)}</td>
-          <td>${badgesHtml}</td>
-          <td>${pbsHtml}</td>
-        `;
-        leaderboardTable.appendChild(tr);
+          <td>${badgesHtml}</td>`;
+        leaderboardTable.appendChild(row);
       });
     }
 
-    // Fireworks: only check for the last person who submitted (if known)
-    if (lastSubmittedName) checkMilestonesFor(lastSubmittedName);
-
-  } catch(err){
-    console.error(err);
-    toast("Failed to load activities");
+  } catch (err){
+    console.error(err); toast("Failed to load activities");
   } finally {
     statusEl.textContent="";
   }
 }
 
-/* ===== Milestone detection ===== */
-function checkMilestonesFor(name){
-  const data = _perRunner[name];
-  if (!data) return;
-
-  // New badges?
-  const currentBadges = getBadges(data.dist);
-  const stored = JSON.parse(localStorage.getItem(keyBadges(name) ) || "[]");
-  const newlyEarned = currentBadges.filter(b => !stored.includes(b));
-  if (newlyEarned.length){
-    triggerFireworks(`${name} unlocked: ${newlyEarned.join(", ")}`);
-    localStorage.setItem(keyBadges(name), JSON.stringify(currentBadges));
-    return; // prefer one burst
-  }
-
-  // New PBs?
-  const pbs = computePBsForRunner(data.runs);
-  const storedPB = JSON.parse(localStorage.getItem(keyPB(name)) || "{}"); // {label: secs}
-  let improved = [];
-  pbs.forEach(pb=>{
-    const prev = storedPB[pb.label];
-    if (prev == null || pb.secs < prev - 0.5) improved.push(`${pb.label} ${pb.time}`);
-    storedPB[pb.label] = pb.secs;
-  });
-  if (improved.length){
-    triggerFireworks(`${name} new PB: ${improved[0]}`);
-    localStorage.setItem(keyPB(name), JSON.stringify(storedPB));
-  }
-}
-
-/* ===== Export CSV of current filtered rows ===== */
-function exportFilteredToCSV(){
-  const rows = _filteredActivities;
-  if (!rows.length){ toast("Nothing to export"); return; }
-  const header = ["Date","Name","Distance (km)","Time","Pace"];
-  const lines = [header.join(",")];
-  rows.forEach(r=>{
-    const date = formatDate(r.date);
-    const dist = parseFloat(String(r.distance).replace(",", ".")) || 0;
-    const time = normalizeTimeStr(r.time || "");
-    const pace = r.pace || calcPace(dist, time);
-    const safe = [date, r.name||"", dist.toFixed(2), time, pace].map(v=>{
-      const s=String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
-    });
-    lines.push(safe.join(","));
-  });
-  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  const name = filterSelect.value ? `runs_${filterSelect.value}.csv` : "runs_all.csv";
-  a.download = name;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-}
-
-/* ===== Invite modal / QR ===== */
-function openInvite(){
-  const base = window.location.origin + window.location.pathname;
-  const nameFilter = filterSelect.value ? `?name=${encodeURIComponent(filterSelect.value)}` : "";
-  const link = base + nameFilter;
-  inviteLinkEl.textContent = link;
-  const qrURL = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(link);
-  qrImg.src = qrURL;
-  inviteModal.classList.add("show"); inviteModal.setAttribute("aria-hidden","false");
-}
-function closeInvite(){ inviteModal.classList.remove("show"); inviteModal.setAttribute("aria-hidden","true"); }
-inviteBtn.addEventListener("click", openInvite);
-closeInviteBtn.addEventListener("click", closeInvite);
-inviteModal.addEventListener("click", e=>{ if(e.target===inviteModal) closeInvite(); });
-copyInviteBtn.addEventListener("click", async ()=>{
-  const text = inviteLinkEl.textContent;
-  try{ await navigator.clipboard.writeText(text); toast("Invite link copied"); } catch{ toast("Copy failed"); }
-});
-
-/* ===== Submit Handler ===== */
+/* Submit run */
 runForm.addEventListener("submit", async (e)=>{
   e.preventDefault();
   const t = normalizeTimeStr(timeHidden.value);
   if (!t){ toast("Pick a time"); return; }
-
-  const name = document.getElementById("name").value.trim();
   const payload = {
     date: document.getElementById("date").value,
-    name,
+    name: document.getElementById("name").value.trim(),
     distance: document.getElementById("distance").value,
-    time: t,
-    hoursEnabled: enableHours.checked === true
+    time: t
   };
-
   try{
     const resp = await fetch(scriptUrl,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload),
-      cache: "no-store"
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload), cache: "no-store"
     });
     const json = await resp.json().catch(()=>({}));
-    if (!resp.ok || json.ok === false){
-      console.error("Save error:", json);
-      toast("Could not save");
-      return;
-    }
-
-    // remember who submitted; used to check fireworks after refresh
-    lastSubmittedName = name;
-
-    runForm.reset();
-    timeHidden.value=""; timeDisplay.textContent="--:--:--"; submitBtn.disabled=true; setHoursUI(false);
+    if (!resp.ok || json.ok === false){ toast("Could not save"); return; }
+    runForm.reset(); timeHidden.value=""; timeDisplay.textContent="--:--:--"; submitBtn.disabled=true;
     toast("Run added");
     await fetchActivities();
-  } catch (err){
-    console.error(err);
-    toast("Network error while saving");
-  }
+  } catch (err){ console.error(err); toast("Network error"); }
 });
 
-/* ===== Persist open/closed states ===== */
-(function persistOpenState(id, key){
-  const det = document.getElementById(id);
-  const saved = localStorage.getItem(key);
-  if (saved !== null) det.open = saved === "1";
-  det.addEventListener("toggle", () => {
-    localStorage.setItem(key, det.open ? "1" : "0");
-  });
-})("secActivities","rt.activities.open");
-(function(){
-  const det = document.getElementById("secLeaderboard");
-  const KEY = "rt.leaderboard.open";
-  const saved = localStorage.getItem(KEY);
-  if (saved !== null) det.open = saved === "1";
-  det.addEventListener("toggle", () => {
-    localStorage.setItem(KEY, det.open ? "1" : "0");
-  });
-})();
-
-/* ===== Interactions ===== */
+/* Interactions */
 filterSelect.addEventListener("change", fetchActivities);
-document.getElementById("refreshBtn").addEventListener("click", fetchActivities);
-exportCsvBtn.addEventListener("click", exportFilteredToCSV);
-expandAllBtn.addEventListener("click", ()=>{ secActivities.open = true; secLeaderboard.open = true; });
-collapseAllBtn.addEventListener("click", ()=>{ secActivities.open = false; secLeaderboard.open = false; });
+refreshBtn.addEventListener("click", fetchActivities);
+timeHidden.addEventListener("change", ()=> submitBtn.disabled = !timeHidden.value);
 
-/* ===== Initial Load ===== */
+/* Initial */
 fetchActivities();
-
-/* ===== Time picker helpers (ensure after DOM used) ===== */
-function setHoursUI(on){ [labelH,colonH].forEach(el=>el.classList.toggle("hide",!on)); if(!on) tpHours.value="00"; }
 </script>
 </body>
 </html>
